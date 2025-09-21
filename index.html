@@ -1,109 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Binance Realtime Signals</title>
+  <meta charset="UTF-8">
+  <title>Binance Realtime Chart</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-    h1 { font-size: 22px; }
-    #status { margin-bottom: 10px; }
-    canvas { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-    #signal { margin-top: 15px; font-weight: bold; font-size: 18px; }
+    body { font-family: Arial, sans-serif; padding: 20px; background: #111; color: #eee; }
+    #symbolSelect { margin-bottom: 20px; padding: 5px; font-size: 16px; }
+    canvas { background: #222; border-radius: 8px; }
   </style>
 </head>
 <body>
-  <h1>Binance Realtime Signals (WebSocket)</h1>
-  <div id="status">Connecting...</div>
-  <canvas id="chart" width="800" height="400"></canvas>
-  <div id="signal">Signal: -</div>
+  <h2>📊 Binance Realtime Scanner</h2>
+  <select id="symbolSelect"></select>
+  <canvas id="chart" width="900" height="450"></canvas>
 
   <script>
-    const symbol = "sunusdt"; // pair to monitor
-    const interval = "3m";   // kline interval
-    const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@kline_${interval}`;
-
-    const closes = [];
-    const labels = [];
-
     const ctx = document.getElementById('chart').getContext('2d');
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Close Price',
-          data: closes,
-          borderColor: 'blue',
-          fill: false,
-          tension: 0.1
-        }]
-      },
-      options: {
-        scales: { x: { display: false } }
-      }
-    });
+    let chart;
+    let ws;
 
-    function ema(values, period) {
-      let k = 2 / (period + 1);
-      let emaArray = [values[0]];
-      for (let i = 1; i < values.length; i++) {
-        emaArray.push(values[i] * k + emaArray[i-1] * (1 - k));
-      }
-      return emaArray;
-    }
-
-    function computeRSI(values, period=14) {
-      if (values.length < period+1) return null;
-      let gains = 0, losses = 0;
-      for (let i=1; i<=period; i++) {
-        let diff = values[i] - values[i-1];
-        if (diff >= 0) gains += diff; else losses -= diff;
-      }
-      gains /= period; losses /= period;
-      let rs = losses === 0 ? 100 : gains / losses;
-      let rsi = 100 - (100 / (1 + rs));
-      return rsi;
-    }
-
-    const statusEl = document.getElementById('status');
-    const signalEl = document.getElementById('signal');
-
-    const ws = new WebSocket(wsUrl);
-    ws.onopen = () => statusEl.textContent = "Connected to Binance WebSocket";
-    ws.onclose = () => statusEl.textContent = "Disconnected";
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const k = data.k;
-      if (!k) return;
-      if (k.x) { // closed candle
-        const close = parseFloat(k.c);
-        const time = new Date(k.t).toLocaleTimeString();
-        closes.push(close);
-        labels.push(time);
-        if (closes.length > 100) { closes.shift(); labels.shift(); }
-
-        chart.data.labels = labels;
-        chart.data.datasets[0].data = closes;
-        chart.update();
-
-        // Indicators
-        const emaFast = ema(closes, 12).slice(-1)[0];
-        const emaSlow = ema(closes, 26).slice(-1)[0];
-        const rsi = computeRSI(closes, 14);
-
-        let signal = "-";
-        if (emaFast && emaSlow && rsi) {
-          if (emaFast > emaSlow && rsi > 50) signal = "GO LONG";
-          else if (emaFast < emaSlow && rsi < 50) signal = "GO SHORT";
+    // --- Chart Init ---
+    function initChart() {
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'candlestick', // ако искаш барове → "bar"
+        data: { datasets: [{ label: 'Price', data: [] }] },
+        options: {
+          parsing: false,
+          scales: {
+            x: { type: 'time', time: { unit: 'minute' }, ticks: { color: '#ccc' } },
+            y: { ticks: { color: '#ccc' } }
+          }
         }
+      });
+    }
 
-        signalEl.textContent = `Signal: ${signal}`;
-        signalEl.style.color = signal === "GO LONG" ? "green" : signal === "GO SHORT" ? "red" : "black";
-      }
-    };
+    // --- Fetch Top 200 Symbols ---
+    async function loadSymbols() {
+      const res = await fetch("https://api.binance.com/api/v3/ticker/24hr");
+      const data = await res.json();
+      // сортираме по обем и вземаме USDT двойки
+      const sorted = data
+        .filter(s => s.symbol.endsWith("USDT"))
+        .sort((a,b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
+        .slice(0, 200);
+
+      const select = document.getElementById('symbolSelect');
+      select.innerHTML = "";
+      sorted.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s.symbol;
+        opt.textContent = s.symbol;
+        select.appendChild(opt);
+      });
+
+      select.value = "BTCUSDT"; // default
+      loadChart(select.value);
+      select.addEventListener("change", e => loadChart(e.target.value));
+    }
+
+    // --- Load Historical Data ---
+    async function loadChart(symbol) {
+      if (ws) ws.close();
+      initChart();
+
+      const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=200`);
+      const klines = await res.json();
+      const data = klines.map(k => ({
+        x: new Date(k[0]),
+        o: parseFloat(k[1]),
+        h: parseFloat(k[2]),
+        l: parseFloat(k[3]),
+        c: parseFloat(k[4])
+      }));
+
+      chart.data.datasets[0].data = data;
+      chart.update();
+
+      // WebSocket за нови свещи
+      const url = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_1m`;
+      ws = new WebSocket(url);
+      ws.onmessage = ev => {
+        const msg = JSON.parse(ev.data);
+        const k = msg.k;
+        if (k.x) { // затворена свещ
+          chart.data.datasets[0].data.push({
+            x: new Date(k.t),
+            o: parseFloat(k.o),
+            h: parseFloat(k.h),
+            l: parseFloat(k.l),
+            c: parseFloat(k.c)
+          });
+          if (chart.data.datasets[0].data.length > 200) {
+            chart.data.datasets[0].data.shift();
+          }
+          chart.update();
+        }
+      };
+    }
+
+    loadSymbols();
   </script>
 </body>
 </html>
