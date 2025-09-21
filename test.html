@@ -4,8 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Crypto Signals Dashboard</title>
-  <link rel="preconnect" href="https://unpkg.com">
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+
+  <!-- Дублиран CDN fallback: ако първият не се зареди, вторият ще покрие -->
+  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <script>
+    // Ако първият CDN не зареди библиотеката, пробваме втори
+    if (!window.LightweightCharts) {
+      document.write('<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"><\/script>');
+    }
+  </script>
+
   <style>
     :root {
       --bg: #0e1116;
@@ -13,20 +21,18 @@
       --panel-2: #0f141b;
       --text: #e6edf3;
       --muted: #98a2b3;
-      --accent: #4cc38a;
-      --accent-2: #ef4444;
       --border: #1f2630;
-      --yellow: #fbbf24;
       --blue: #60a5fa;
       --green: #22c55e;
       --red: #ef4444;
     }
     * { box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
     }
     header {
       padding: 14px 18px;
@@ -37,74 +43,7 @@
       background: linear-gradient(180deg, #121722, #0e1116);
       position: sticky; top: 0; z-index: 5;
     }
-    .brand {
-      font-weight: 700;
-      letter-spacing: 0.4px;
-      color: #cbd5e1;
-    }
-    .search {
-      flex: 1;
-      position: relative;
-      max-width: 680px;
-    }
-    .combo {
-      display: flex;
-      position: relative;
-      border: 1px solid var(--border);
-      background: var(--panel);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    .combo input {
-      flex: 1;
-      padding: 12px 12px 12px 14px;
-      background: transparent;
-      border: 0;
-      color: var(--text);
-      outline: none;
-      font-size: 14px;
-    }
-    .combo button {
-      border: 0;
-      background: var(--panel-2);
-      color: var(--muted);
-      padding: 0 12px;
-      cursor: pointer;
-      font-size: 12px;
-      border-left: 1px solid var(--border);
-    }
-    .dropdown {
-      position: absolute;
-      top: calc(100% + 6px);
-      left: 0; right: 0;
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      max-height: 360px;
-      overflow: auto;
-      display: none;
-      box-shadow: 0 6px 24px rgba(0,0,0,0.35);
-      z-index: 10;
-    }
-    .dropdown.open { display: block; }
-    .option {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-    }
-    .option:last-child { border-bottom: 0; }
-    .option:hover { background: #1a2130; }
-    .badge {
-      font-size: 11px;
-      color: var(--muted);
-      background: var(--panel-2);
-      padding: 2px 6px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-    }
+    .brand { font-weight: 700; letter-spacing: .4px; color: #cbd5e1; }
     .content {
       display: grid;
       grid-template-columns: 1.3fr 340px;
@@ -116,6 +55,7 @@
       border: 1px solid var(--border);
       border-radius: 14px;
       overflow: hidden;
+      min-height: 200px;
     }
     .card-header {
       padding: 12px 14px;
@@ -125,18 +65,9 @@
       justify-content: space-between;
       gap: 12px;
     }
-    .title {
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    .title { font-weight: 600; display: flex; align-items: center; gap: 10px; }
     .subtitle { color: var(--muted); font-size: 12px; }
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .toolbar { display: flex; align-items: center; gap: 8px; }
     .toolbar .tf {
       background: var(--panel-2);
       border: 1px solid var(--border);
@@ -146,125 +77,75 @@
       cursor: pointer;
       font-size: 12px;
     }
-    .toolbar .tf.active {
-      outline: 1px solid var(--blue);
-      color: #dbeafe;
-    }
+    .toolbar .tf.active { outline: 1px solid var(--blue); color: #dbeafe; }
     #chart {
-      width: 100%;
-      height: 560px;
+      width: 100% !important;
+      height: 560px !important;
       min-height: 400px;
       display: block;
+      background: #0f141b;
     }
-    .panel {
-      padding: 12px 14px;
-    }
+    .panel { padding: 12px 14px; }
     .signals {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
-    .signal-box {
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 10px;
-    }
-    .signal-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin: 6px 0;
-    }
+    .signal-box { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
+    .signal-row { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; }
     .signal-label { color: var(--muted); font-size: 12px; }
-    .signal-badge {
-      padding: 4px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      border: 1px solid var(--border);
-    }
+    .signal-badge { padding: 4px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
     .bull { background: rgba(34,197,94,0.12); color: #86efac; }
     .bear { background: rgba(239,68,68,0.12); color: #fca5a5; }
     .neutral { background: rgba(234,179,8,0.12); color: #fde68a; }
-    .levels {
-      display: grid; gap: 8px;
-    }
+    .levels { display: grid; gap: 8px; }
     .level {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 10px;
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-variant-numeric: tabular-nums;
+      padding: 8px 10px; background: var(--panel-2); border: 1px solid var(--border);
+      border-radius: 8px; font-variant-numeric: tabular-nums;
     }
     .level.red { outline: 1px dashed rgba(239,68,68,0.35); }
     .level.green { outline: 1px dashed rgba(34,197,94,0.35); }
-    .legend {
-      display:flex; gap:12px; align-items:center; color: var(--muted); font-size:12px;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right:6px; }
-    .dot-fast { background:#60a5fa; }
-    .dot-slow { background:#f59e0b; }
-    .dot-ribbon-g { background:#22c55e; }
-    .dot-ribbon-r { background:#ef4444; }
-    .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
-    .status {
-      color: var(--muted); font-size: 12px; padding: 8px 14px; border-top: 1px solid var(--border);
-    }
+    .status { color: var(--muted); font-size: 12px; padding: 8px 14px; border-top: 1px solid var(--border); }
     @media (max-width: 1024px) {
       .content { grid-template-columns: 1fr; }
-      #chart { height: 460px; }
+      #chart { height: 460px !important; }
     }
   </style>
 </head>
 <body>
   <header>
     <div class="brand">Анализ и сигнали • Крипто</div>
-    <div class="search" id="searchRoot">
-      <div class="combo">
-        <input id="searchInput" placeholder="Търси валута (пример: BTC, ETH, SOL)..." autocomplete="off" />
-        <button id="toggleList" title="Покажи/скрий списъка">▼</button>
-      </div>
-      <div class="dropdown" id="dropdown"></div>
-    </div>
   </header>
 
   <main class="content">
     <section class="card">
       <div class="card-header">
         <div class="title">
-          <span id="pairTitle">—</span>
-          <span class="badge" id="pairRank">#—</span>
-          <div class="legend">
-            <span><i class="dot dot-fast"></i>EMA 20</span>
-            <span><i class="dot dot-slow"></i>EMA 50</span>
-            <span><i class="dot dot-ribbon-g"></i>Ribbon Bull</span>
-            <span><i class="dot dot-ribbon-r"></i>Ribbon Bear</span>
-          </div>
+          <span id="pairTitle">BTC/USDT • Bitcoin</span>
+          <span class="badge" id="pairRank">#1</span>
         </div>
         <div class="toolbar" id="tfBar">
-          <button class="tf" data-tf="5m">5m</button>
-          <button class="tf" data-tf="15m">15m</button>
-          <button class="tf" data-tf="1h">1h</button>
           <button class="tf active" data-tf="3h">3h</button>
+          <button class="tf" data-tf="1h">1h</button>
           <button class="tf" data-tf="4h">4h</button>
           <button class="tf" data-tf="1d">1d</button>
         </div>
       </div>
       <div id="chart"></div>
-      <div class="status" id="status">Готово.</div>
+      <div class="status" id="status">Инициализация...</div>
     </section>
 
     <aside class="card">
       <div class="card-header">
         <div>
           <div class="title">Сигнали по таймфрейм</div>
-          <div class="subtitle">Автоматични сигнали (EMA 20/50 + кросоувъри)</div>
+          <div class="subtitle">EMA 20/50 + кросоувъри</div>
         </div>
       </div>
       <div class="panel">
         <div class="signals" id="signalsGrid"></div>
-        <div class="note">Логика: Bullish ако EMA20 > EMA50; Bearish ако EMA20 < EMA50; Neutral ако са близо/плоски. Кросоувърите маркират GO LONG/GO SHORT.</div>
+        <div class="status">Логика: Bullish ако EMA20 > EMA50; Bearish ако EMA20 < EMA50; Neutral ако са близо/плоски.</div>
       </div>
       <div class="card-header">
         <div class="title">Нива на цената</div>
@@ -277,215 +158,102 @@
   </main>
 
   <script>
-    // ------------------ Config ------------------
-    const COINGECKO_LIST_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=200&page=1&sparkline=false';
+    // --------------- Diagnostics ---------------
+    const log = (...a) => { console.log('[chart]', ...a); };
+    const setStatus = (t) => { const el = document.getElementById('status'); if (el) el.textContent = t; };
+
+    // --------------- Globals ---------------
     const BINANCE_KLINES_URL = 'https://api.binance.com/api/v3/klines';
     const DEFAULT_TF = '3h';
-    const TF_MAP = {
-      '5m': { binance: '5m', limit: 600 },
-      '15m': { binance: '15m', limit: 600 },
-      '1h': { binance: '1h', limit: 800 },
-      '3h': { binance: '3h', limit: 800 },
-      '4h': { binance: '4h', limit: 800 },
-      '1d': { binance: '1d', limit: 1000 },
-    };
+    const TF_MAP = { '1h':'1h', '3h':'3h', '4h':'4h', '1d':'1d' };
 
-    // ------------------ State ------------------
-    let COINS = [];        // {id, symbol, name, market_cap_rank}
-    let CURRENT = null;    // {id, symbol, name, rank, binanceSymbol}
     let chart, candleSeries, ema20Series, ema50Series, ribbonSeries;
+    let CURRENT = { symbol: 'BTC', name: 'Bitcoin', binanceSymbol: 'BTCUSDT', rank: 1 };
     let currentTF = DEFAULT_TF;
 
-    // ------------------ Utilities ------------------
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-    function formatPrice(p) {
-      if (p >= 100) return p.toFixed(2);
-      if (p >= 1) return p.toFixed(4);
-      if (p >= 0.1) return p.toFixed(5);
-      return p.toFixed(6);
-    }
-
-    function ema(values, period) {
-      const k = 2 / (period + 1);
-      const emaArr = [];
-      let prev;
-      for (let i = 0; i < values.length; i++) {
-        const v = values[i];
-        if (i < period - 1) {
-          emaArr.push(null);
-          continue;
-        }
-        if (i === period - 1) {
-          const sma = values.slice(0, period).reduce((a,b)=>a+b,0) / period;
-          emaArr.push(sma);
-          prev = sma;
-        } else {
-          const next = v * k + prev * (1 - k);
-          emaArr.push(next);
-          prev = next;
-        }
-      }
-      return emaArr;
-    }
-
-    function buildCrossoverMarkers(candles, emaFast, emaSlow) {
-      const markers = [];
-      for (let i = 1; i < candles.length; i++) {
-        const prevFast = emaFast[i-1], prevSlow = emaSlow[i-1];
-        const curFast = emaFast[i],   curSlow = emaSlow[i];
-        if (prevFast == null || prevSlow == null || curFast == null || curSlow == null) continue;
-        const prevDiff = prevFast - prevSlow;
-        const curDiff = curFast - curSlow;
-        if (prevDiff <= 0 && curDiff > 0) {
-          markers.push({ time: candles[i].time, position: 'belowBar', color: '#22c55e', shape: 'arrowUp', text: 'GO LONG' });
-        }
-        if (prevDiff >= 0 && curDiff < 0) {
-          markers.push({ time: candles[i].time, position: 'aboveBar', color: '#ef4444', shape: 'arrowDown', text: 'GO SHORT' });
-        }
-      }
-      return markers;
-    }
-
-    function classifySignal(emaFast, emaSlow) {
-      if (emaFast == null || emaSlow == null) return 'Neutral';
-      const diff = Math.abs((emaFast - emaSlow) / emaSlow);
-      if (emaFast > emaSlow && diff > 0.0015) return 'Bullish';
-      if (emaFast < emaSlow && diff > 0.0015) return 'Bearish';
-      return 'Neutral';
-    }
-
-    function signalBadgeClass(sig) {
-      if (sig === 'Bullish') return 'signal-badge bull';
-      if (sig === 'Bearish') return 'signal-badge bear';
-      return 'signal-badge neutral';
-    }
-
-    function computeLevels(candles, count = 4) {
-      if (!candles?.length) return [];
-      const last = candles[candles.length - 1];
-      const close = last.close;
-      const recent = candles.slice(-200);
-      const highs = recent.map(c => c.high).sort((a,b)=>b-a);
-      const lows = recent.map(c => c.low).sort((a,b)=>a-b);
-      const levels = [];
-      if (highs.length) levels.push({ price: highs[0], kind: 'res' });
-      if (highs.length > 3) levels.push({ price: highs[3], kind: 'res' });
-      if (lows.length) levels.push({ price: lows[0], kind: 'sup' });
-      if (lows.length > 3) levels.push({ price: lows[3], kind: 'sup' });
-      const step = Math.max(close * 0.015, lows[0] != null ? (close - lows[0]) / 15 : close * 0.015);
-      levels.push({ price: close + step, kind: 'res' });
-      levels.push({ price: close, kind: 'px' });
-      levels.push({ price: close - step, kind: 'sup' });
-      const map = new Map();
-      levels.forEach(l => map.set(formatPrice(l.price), l));
-      return Array.from(map.values()).sort((a,b)=>b.price - a.price).slice(0, count + 2);
-    }
-
-    // ------------------ Data Fetch ------------------
-    async function loadTopCoins() {
-      const res = await fetch(COINGECKO_LIST_URL);
-      if (!res.ok) throw new Error('Coin list failed');
-      const data = await res.json();
-      COINS = data.map(d => ({
-        id: d.id,
-        symbol: d.symbol.toUpperCase(),
-        name: d.name,
-        market_cap_rank: d.market_cap_rank
-      }));
-      renderDropdown(COINS);
-    }
-
-    function binanceSymbolFor(coin) {
-      return `${coin.symbol.toUpperCase()}USDT`;
-    }
-
-    async function fetchKlines(symbol, interval, limit=500) {
-      const url = `${BINANCE_KLINES_URL}?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('No klines');
-      const arr = await res.json();
-      return arr.map(k => ({
-        time: Math.floor(k[0] / 1000),
-        open: +k[1],
-        high: +k[2],
-        low: +k[3],
-        close: +k[4],
-        volume: +k[5],
-      }));
-    }
-
-    // ------------------ UI: Search/Dropdown ------------------
-    const dropdown = document.getElementById('dropdown');
-    const searchInput = document.getElementById('searchInput');
-    const toggleList = document.getElementById('toggleList');
-
-    function renderDropdown(list) {
-      dropdown.innerHTML = '';
-      list.forEach(c => {
-        const div = document.createElement('div');
-        div.className = 'option';
-        div.innerHTML = `
-          <div>${c.name}</div>
-          <div class="badge">${c.symbol}</div>
-          <div class="badge">#${c.market_cap_rank ?? '-'}</div>
-        `;
-        div.addEventListener('click', () => selectCoin(c));
-        dropdown.appendChild(div);
-      });
-    }
-
-    function filterDropdown(q) {
-      const term = q.trim().toLowerCase();
-      const filtered = !term ? COINS
-        : COINS.filter(c =>
-            c.symbol.toLowerCase().includes(term) ||
-            c.name.toLowerCase().includes(term));
-      renderDropdown(filtered.slice(0, 200));
-      if (filtered.length) dropdown.classList.add('open');
-      else dropdown.classList.remove('open');
-    }
-
-    searchInput.addEventListener('input', (e) => filterDropdown(e.target.value));
-    searchInput.addEventListener('focus', () => {
-      if (dropdown.children.length) dropdown.classList.add('open');
-    });
-    toggleList.addEventListener('click', () => {
-      dropdown.classList.toggle('open');
-      if (dropdown.classList.contains('open')) searchInput.focus();
-    });
-    document.addEventListener('click', (e) => {
-      if (!document.getElementById('searchRoot').contains(e.target)) {
-        dropdown.classList.remove('open');
-      }
-    });
-
-    // ------------------ Chart sizing helpers ------------------
+    // --------------- Helpers ---------------
     async function waitForContainerSize(el, timeoutMs = 4000) {
       const start = performance.now();
       while ((el.clientWidth === 0 || el.clientHeight === 0) && performance.now() - start < timeoutMs) {
         await new Promise(r => setTimeout(r, 50));
       }
-      return { w: el.clientWidth || 800, h: el.clientHeight || 560 };
+      return { w: el.clientWidth || 960, h: el.clientHeight || 560 };
     }
 
-    function observeResize(container, chart) {
-      if (!('ResizeObserver' in window)) {
-        window.addEventListener('resize', () => {
-          chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
-        });
-        return;
+    function ema(values, period) {
+      const k = 2 / (period + 1);
+      const out = [];
+      let prev;
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        if (i < period - 1) { out.push(null); continue; }
+        if (i === period - 1) {
+          const sma = values.slice(0, period).reduce((a,b)=>a+b,0) / period;
+          out.push(sma); prev = sma;
+        } else {
+          const e = v * k + prev * (1 - k);
+          out.push(e); prev = e;
+        }
       }
-      const ro = new ResizeObserver(() => {
-        chart.applyOptions({ width: container.clientWidth, height: container.clientHeight });
-      });
-      ro.observe(container);
+      return out;
     }
 
+    function buildCrossoverMarkers(candles, emaFast, emaSlow) {
+      const markers = [];
+      for (let i = 1; i < candles.length; i++) {
+        const a0 = emaFast[i-1], b0 = emaSlow[i-1];
+        const a1 = emaFast[i],   b1 = emaSlow[i];
+        if (a0==null||b0==null||a1==null||b1==null) continue;
+        if (a0 <= b0 && a1 > b1) {
+          markers.push({ time: candles[i].time, position:'belowBar', color:'#22c55e', shape:'arrowUp', text:'GO LONG' });
+        }
+        if (a0 >= b0 && a1 < b1) {
+          markers.push({ time: candles[i].time, position:'aboveBar', color:'#ef4444', shape:'arrowDown', text:'GO SHORT' });
+        }
+      }
+      return markers.slice(-60);
+    }
+
+    function computeLevels(candles, count = 4) {
+      if (!candles?.length) return [];
+      const last = candles[candles.length-1].close;
+      const recent = candles.slice(-200);
+      const highs = recent.map(c=>c.high).sort((a,b)=>b-a);
+      const lows  = recent.map(c=>c.low).sort((a,b)=>a-b);
+      const lvls = [];
+      if (highs[0]) lvls.push({ price: highs[0], kind: 'res' });
+      if (highs[3]) lvls.push({ price: highs[3], kind: 'res' });
+      if (lows[0])  lvls.push({ price: lows[0],  kind: 'sup' });
+      if (lows[3])  lvls.push({ price: lows[3],  kind: 'sup' });
+      const step = Math.max(last*0.015, lows[0] ? (last - lows[0])/15 : last*0.015);
+      lvls.push({ price: last + step, kind:'res' }, { price:last, kind:'px' }, { price:last - step, kind:'sup' });
+      const uniq = new Map(); lvls.forEach(l=>uniq.set(l.price.toFixed(2), l));
+      return Array.from(uniq.values()).sort((a,b)=>b.price-a.price).slice(0, count+2);
+    }
+
+    function renderLevels(candles) {
+      const holder = document.getElementById('levels'); if (!holder) return;
+      holder.innerHTML = '';
+      computeLevels(candles).forEach(l => {
+        const div = document.createElement('div');
+        div.className = 'level ' + (l.kind==='res' ? 'red' : (l.kind==='sup' ? 'green' : ''));
+        div.innerHTML = `<div>${l.kind==='res'?'Resistance':l.kind==='sup'?'Support':'Last'}</div><div>${l.price.toFixed(2)}</div>`;
+        holder.appendChild(div);
+      });
+    }
+
+    // --------------- Chart ---------------
     async function initChart() {
       if (chart) return;
+      if (!window.LightweightCharts) {
+        setStatus('Грешка: библиотеката за графики не се зареди.');
+        console.error('LightweightCharts is not available.');
+        return;
+      }
+
       const el = document.getElementById('chart');
       const { w, h } = await waitForContainerSize(el);
+      log('container size', w, h);
 
       chart = LightweightCharts.createChart(el, {
         width: w,
@@ -493,20 +261,14 @@
         layout: { background: { color: '#0f141b' }, textColor: '#cbd5e1' },
         rightPriceScale: { borderColor: '#1f2630', scaleMargins: { top: 0.1, bottom: 0.1 } },
         timeScale: { borderColor: '#1f2630' },
-        grid: {
-          vertLines: { color: '#141a22' },
-          horzLines: { color: '#141a22' },
-        },
+        grid: { vertLines: { color: '#141a22' }, horzLines: { color: '#141a22' } },
         crosshair: { mode: 1 },
       });
 
       candleSeries = chart.addCandlestickSeries({
-        upColor: '#16a34a',
-        downColor: '#ef4444',
-        borderDownColor: '#ef4444',
-        borderUpColor: '#16a34a',
-        wickDownColor: '#ef4444',
-        wickUpColor: '#16a34a',
+        upColor: '#16a34a', downColor: '#ef4444',
+        borderUpColor: '#16a34a', borderDownColor: '#ef4444',
+        wickUpColor: '#16a34a', wickDownColor: '#ef4444',
       });
       ema20Series = chart.addLineSeries({ color: '#60a5fa', lineWidth: 2 });
       ema50Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
@@ -517,196 +279,116 @@
         lineWidth: 1,
       });
 
-      observeResize(el, chart);
-    }
-
-    function setStatus(msg) {
-      document.getElementById('status').textContent = msg;
-    }
-
-    // ------------------ Signals Table & Levels ------------------
-    async function updateSignalsTable(symbol) {
-      const grid = document.getElementById('signalsGrid');
-      grid.innerHTML = '';
-      const tfs = ['5m','15m','1h','4h','1d'];
-      for (const tf of tfs) {
-        let sig = 'Neutral';
-        try {
-          const meta = TF_MAP[tf];
-          const candles = await fetchKlines(symbol, meta.binance, meta.limit);
-          const closes = candles.map(c => c.close);
-          const e20 = ema(closes, 20);
-          const e50 = ema(closes, 50);
-          const last20 = e20[e20.length - 1];
-          const last50 = e50[e50.length - 1];
-          sig = classifySignal(last20, last50);
-        } catch (e) {
-          sig = 'Neutral';
-        }
-        const box = document.createElement('div');
-        box.className = 'signal-box';
-        box.innerHTML = `
-          <div class="signal-row">
-            <div class="signal-label"><b>TF:</b> ${tf}</div>
-            <div class="${signalBadgeClass(sig)}">${sig}</div>
-          </div>
-        `;
-        grid.appendChild(box);
-        await sleep(180);
+      if ('ResizeObserver' in window) {
+        new ResizeObserver(() => {
+          chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
+        }).observe(el);
+      } else {
+        window.addEventListener('resize', () => {
+          chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
+        });
       }
     }
 
-    function updateLevels(candles) {
-      const holder = document.getElementById('levels');
-      holder.innerHTML = '';
-      const lvls = computeLevels(candles, 4);
-      lvls.forEach((l) => {
-        const cls = l.kind === 'res' ? 'red' : (l.kind === 'sup' ? 'green' : '');
-        const tag = l.kind === 'res' ? 'Resistance' : (l.kind === 'sup' ? 'Support' : 'Last');
-        const div = document.createElement('div');
-        div.className = `level ${cls}`;
-        div.innerHTML = `
-          <div>${tag}</div>
-          <div>${formatPrice(l.price)}</div>
-        `;
-        holder.appendChild(div);
-      });
+    // --------------- Data ---------------
+    async function fetchKlines(symbol, interval, limit=500) {
+      const url = `${BINANCE_KLINES_URL}?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Binance error: ${res.status}`);
+      const arr = await res.json();
+      return arr.map(k => ({
+        time: Math.floor(k[0] / 1000),
+        open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5],
+      }));
     }
 
-    // ------------------ Main Flow ------------------
-    async function selectCoin(c) {
-      dropdown.classList.remove('open');
-      searchInput.value = `${c.name} (${c.symbol})`;
-      CURRENT = {
-        id: c.id,
-        name: c.name,
-        symbol: c.symbol,
-        rank: c.market_cap_rank,
-        binanceSymbol: binanceSymbolFor(c),
-      };
-      document.getElementById('pairTitle').textContent = `${CURRENT.symbol}/USDT • ${CURRENT.name}`;
-      document.getElementById('pairRank').textContent = `#${CURRENT.rank ?? '-'}`;
-      setStatus('Зареждане на данни...');
-
-      await renderTF(currentTF);
-      updateSignalsTable(CURRENT.binanceSymbol);
+    function generateMockCandles(stepSec = 1800, n = 180) {
+      const now = Math.floor(Date.now() / 1000);
+      let px = 25000;
+      const out = [];
+      for (let i = n; i > 0; i--) {
+        const t = now - i * stepSec;
+        const o = px + (Math.random() - 0.5) * 50;
+        const h = o + Math.random() * 80;
+        const l = o - Math.random() * 80;
+        const c = l + Math.random() * (h - l);
+        out.push({ time: t, open: o, high: h, low: l, close: c, volume: Math.random() * 10 });
+        px = c;
+      }
+      return out;
     }
 
+    // --------------- Render flow ---------------
     async function renderTF(tf) {
+      currentTF = tf;
+      const btns = document.querySelectorAll('#tfBar .tf');
+      btns.forEach(b => b.classList.toggle('active', b.dataset.tf === tf));
+
+      await initChart();
+      if (!chart) return;
+
+      setStatus(`Рендер на ${tf}...`);
+      const stepSec =
+        tf.endsWith('d') ? 86400 :
+        tf.endsWith('h') ? parseInt(tf) * 3600 :
+        tf.endsWith('m') ? parseInt(tf) * 60 : 1800;
+
+      // 1) Първо: показваме тестова графика (за да видиш визуално, че работи)
+      const mock = generateMockCandles(stepSec, 180);
+      candleSeries.setData(mock);
+      const closesMock = mock.map(c => c.close);
+      const e20m = ema(closesMock, 20), e50m = ema(closesMock, 50);
+      ema20Series.setData(mock.map((c, i) => e20m[i] == null ? null : ({ time: c.time, value: e20m[i] })).filter(Boolean));
+      ema50Series.setData(mock.map((c, i) => e50m[i] == null ? null : ({ time: c.time, value: e50m[i] })).filter(Boolean));
+      ribbonSeries.setData(mock.map(c => ({ time: c.time, value: (c.high + c.low) / 2 })));
+      candleSeries.setMarkers(buildCrossoverMarkers(mock, e20m, e50m));
+      renderLevels(mock);
+      chart.timeScale().fitContent();
+      setStatus('Показвам тестови данни, опитвам Binance...');
+
+      // 2) После: опитваме реални данни от Binance; ако стане — заместваме mock
       try {
-        currentTF = tf;
-        document.querySelectorAll('#tfBar .tf').forEach(b => {
-          b.classList.toggle('active', b.dataset.tf === tf);
-        });
-
-        await initChart();
-        setStatus(`Зареждане на ${tf} свещи...`);
-        const meta = TF_MAP[tf] || TF_MAP[DEFAULT_TF];
-
-        let candles = [];
-        let usedMock = false;
-        try {
-          candles = await fetchKlines(CURRENT.binanceSymbol, meta.binance, meta.limit);
-        } catch (e) {
-          usedMock = true;
+        const real = await fetchKlines(CURRENT.binanceSymbol, TF_MAP[tf] || '3h', 800);
+        if (real && real.length) {
+          candleSeries.setData(real);
+          const closes = real.map(c => c.close);
+          const e20 = ema(closes, 20), e50 = ema(closes, 50);
+          ema20Series.setData(real.map((c, i) => e20[i] == null ? null : ({ time: c.time, value: e20[i] })).filter(Boolean));
+          ema50Series.setData(real.map((c, i) => e50[i] == null ? null : ({ time: c.time, value: e50[i] })).filter(Boolean));
+          ribbonSeries.setData(real.map(c => ({ time: c.time, value: (c.high + c.low) / 2 })));
+          candleSeries.setMarkers(buildCrossoverMarkers(real, e20, e50));
+          renderLevels(real);
+          chart.timeScale().fitContent();
+          setStatus('Готово (реални данни).');
+          log('real candles', real.length);
+        } else {
+          setStatus('Останах на тестови данни (празен отговор от API).');
+          log('empty real candles');
         }
-        if (!candles || !candles.length) {
-          usedMock = true;
-          const now = Math.floor(Date.now() / 1000);
-          const stepSec =
-            meta.binance.endsWith('d') ? 86400 :
-            meta.binance.endsWith('h') ? parseInt(meta.binance) * 3600 :
-            meta.binance.endsWith('m') ? parseInt(meta.binance) * 60 : 1800;
-          let px = 25000;
-          candles = Array.from({ length: 180 }, (_, idx) => {
-            const t = now - (180 - idx) * stepSec;
-            const o = px + (Math.random() - 0.5) * 50;
-            const h = o + Math.random() * 80;
-            const l = o - Math.random() * 80;
-            const c = l + Math.random() * (h - l);
-            px = c;
-            return { time: t, open: o, high: h, low: l, close: c, volume: Math.random() * 10 };
-          });
-        }
-
-        if (!candles.length) {
-          setStatus('Няма данни за тази двойка/таймфрейм.');
-          return;
-        }
-
-        candleSeries.setData(candles);
-
-        const closes = candles.map(c => c.close);
-        const e20 = ema(closes, 20);
-        const e50 = ema(closes, 50);
-
-        const ema20Data = candles.map((c, i) => e20[i] == null ? null : ({ time: c.time, value: e20[i] })).filter(Boolean);
-        const ema50Data = candles.map((c, i) => e50[i] == null ? null : ({ time: c.time, value: e50[i] })).filter(Boolean);
-
-        ema20Series.setData(ema20Data);
-        ema50Series.setData(ema50Data);
-
-        const lastE20 = e20[e20.length - 1];
-        const lastE50 = e50[e50.length - 1];
-        const bull = lastE20 != null && lastE50 != null && lastE20 > lastE50;
-        ribbonSeries.setData(candles.map(c => ({ time: c.time, value: (c.high + c.low) / 2 })));
-        ribbonSeries.applyOptions({
-          topColor: bull ? 'rgba(34,197,94,0.18)' : 'rgba(239,68,68,0.18)',
-          bottomColor: bull ? 'rgba(34,197,94,0.02)' : 'rgba(239,68,68,0.02)',
-        });
-
-        const markers = buildCrossoverMarkers(candles, e20, e50);
-        candleSeries.setMarkers(markers.slice(-40));
-
-        updateLevels(candles);
-        setStatus(usedMock ? 'Показвам тестови данни (временен проблем с API или липсваща двойка).' : 'Готово.');
       } catch (e) {
-        console.error(e);
-        setStatus('Грешка при зареждане на данни или рендера на графиката.');
+        console.warn('Binance fetch failed, staying on mock.', e);
+        setStatus('Останах на тестови данни (проблем с API).');
       }
     }
 
-    // TF buttons
-    document.getElementById('tfBar').addEventListener('click', (e) => {
-      const btn = e.target.closest('.tf');
-      if (!btn || !CURRENT) return;
-      renderTF(btn.dataset.tf);
-    });
-
-    // ------------------ Init with hard fallback ------------------
+    // --------------- Init ---------------
     (async function init() {
       try {
-        setStatus('Зареждане на списък с монети...');
-        const loadCoins = (async () => {
-          await loadTopCoins();
-          const btc = COINS.find(c => c.symbol === 'BTC') || COINS[0];
-          if (!btc) throw new Error('No coins loaded');
-          return btc;
-        })();
-
-        // Fail-fast на 3s за CoinGecko, за да стартира графиката независимо
-        let firstCoin;
-        try {
-          firstCoin = await Promise.race([
-            loadCoins,
-            new Promise((_, rej) => setTimeout(() => rej(new Error('Coin list timeout')), 3000))
-          ]);
-        } catch {
-          firstCoin = { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', market_cap_rank: 1 };
-          renderDropdown([]); // празен списък, UI все пак е стабилен
-        }
-
-        await selectCoin(firstCoin);
-      } catch (e) {
-        console.error(e);
-        // Абсолютен fallback към BTC/USDT
-        CURRENT = { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', rank: 1, binanceSymbol: 'BTCUSDT' };
         document.getElementById('pairTitle').textContent = 'BTC/USDT • Bitcoin';
         document.getElementById('pairRank').textContent = '#1';
-        await initChart();
         await renderTF(DEFAULT_TF);
+      } catch (e) {
+        console.error(e);
+        setStatus('Фатална грешка при инициализация.');
       }
     })();
+
+    // --------------- TF controls ---------------
+    document.getElementById('tfBar').addEventListener('click', (e) => {
+      const btn = e.target.closest('.tf');
+      if (!btn) return;
+      renderTF(btn.dataset.tf);
+    });
   </script>
 </body>
 </html>
