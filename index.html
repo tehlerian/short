@@ -212,6 +212,12 @@
       .content { grid-template-columns: 1fr; }
       #chart { height: 460px; }
     }
+	#chart {
+	  width: 100%;
+	  height: 560px;
+	  min-height: 400px;
+	}
+
   </style>
 </head>
 <body>
@@ -540,6 +546,14 @@
     function setStatus(msg) {
       document.getElementById('status').textContent = msg;
     }
+	
+	window.addEventListener('resize', () => {
+	  chart.applyOptions({
+	    width: document.getElementById('chart').clientWidth,
+		height: document.getElementById('chart').clientHeight
+	  });
+    });
+
 
     // ------------------ Signals Table & Levels ------------------
     async function updateSignalsTable(symbol) {
