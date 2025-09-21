@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Crypto Signals Dashboard</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    :root {
+      --bg: #0e1116;
+      --panel: #151a22;
+      --panel-2: #0f141b;
+      --text: #e6edf3;
+      --muted: #98a2b3;
+      --accent: #4cc38a;
+      --accent-2: #ef4444;
+      --border: #1f2630;
+      --yellow: #fbbf24;
+      --blue: #60a5fa;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+    }
+    header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: linear-gradient(180deg, #121722, #0e1116);
+      position: sticky; top: 0; z-index: 5;
+    }
+    .brand {
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      color: #cbd5e1;
+    }
+    .search {
+      flex: 1;
+      position: relative;
+      max-width: 680px;
+    }
+    .combo {
+      display: flex;
+      position: relative;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .combo input {
+      flex: 1;
+      padding: 12px 12px 12px 14px;
+      background: transparent;
+      border: 0;
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
+    }
+    .combo button {
+      border: 0;
+      background: var(--panel-2);
+      color: var(--muted);
+      padding: 0 12px;
+      cursor: pointer;
+      font-size: 12px;
+      border-left: 1px solid var(--border);
+    }
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0; right: 0;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      max-height: 360px;
+      overflow: auto;
+      display: none;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.35);
+      z-index: 10;
+    }
+    .dropdown.open { display: block; }
+    .option {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+    .option:last-child { border-bottom: 0; }
+    .option:hover { background: #1a2130; }
+    .badge {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--panel-2);
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+    .content {
+      display: grid;
+      grid-template-columns: 1.3fr 340px;
+      gap: 16px;
+      padding: 16px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .card-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .title {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .subtitle { color: var(--muted); font-size: 12px; }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toolbar .tf {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .toolbar .tf.active {
+      outline: 1px solid var(--blue);
+      color: #dbeafe;
+    }
+    #chart {
+      height: 560px;
+    }
+    .panel {
+      padding: 12px 14px;
+    }
+    .signals {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .signal-box {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .signal-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 6px 0;
+    }
+    .signal-label { color: var(--muted); font-size: 12px; }
+    .signal-badge {
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+    }
+    .bull { background: rgba(34,197,94,0.12); color: #86efac; }
+    .bear { background: rgba(239,68,68,0.12); color: #fca5a5; }
+    .neutral { background: rgba(234,179,8,0.12); color: #fde68a; }
+    .levels {
+      display: grid; gap: 8px;
+    }
+    .level {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 10px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+    .level.red { outline: 1px dashed rgba(239,68,68,0.35); }
+    .level.green { outline: 1px dashed rgba(34,197,94,0.35); }
+    .legend {
+      display:flex; gap:12px; align-items:center; color: var(--muted); font-size:12px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display:inline-block; margin-right:6px; }
+    .dot-fast { background:#60a5fa; }
+    .dot-slow { background:#f59e0b; }
+    .dot-ribbon-g { background:#22c55e; }
+    .dot-ribbon-r { background:#ef4444; }
+    .note { color: var(--muted); font-size: 12px; margin-top: 8px; }
+    .status {
+      color: var(--muted); font-size: 12px; padding: 8px 14px; border-top: 1px solid var(--border);
+    }
+    @media (max-width: 1024px) {
+      .content { grid-template-columns: 1fr; }
+      #chart { height: 460px; }
+    }
+	#chart {
+	  width: 100%;
+	  height: 560px;
+	  min-height: 400px;
+	  display: block;
+	}
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Анализ и сигнали • Крипто</div>
+    <div class="search" id="searchRoot">
+      <div class="combo">
+        <input id="searchInput" placeholder="Търси валута (пример: BTC, ETH, SOL)..." autocomplete="off" />
+        <button id="toggleList">▼</button>
+      </div>
+      <div class="dropdown" id="dropdown"></div>
+    </div>
+  </header>
+
+  <main class="content">
+    <section class="card">
+      <div class="card-header">
+        <div class="title">
+          <span id="pairTitle">—</span>
+          <span class="badge" id="pairRank">#—</span>
+          <div class="legend">
+            <span><i class="dot dot-fast"></i>EMA 20</span>
+            <span><i class="dot dot-slow"></i>EMA 50</span>
+            <span><i class="dot dot-ribbon-g"></i>Ribbon Bull</span>
+            <span><i class="dot dot-ribbon-r"></i>Ribbon Bear</span>
+          </div>
+        </div>
+        <div class="toolbar" id="tfBar">
+          <button class="tf" data-tf="5m">5m</button>
+          <button class="tf" data-tf="15m">15m</button>
+          <button class="tf" data-tf="1h">1h</button>
+          <button class="tf" data-tf="3h" class="active">3h</button>
+          <button class="tf" data-tf="4h">4h</button>
+          <button class="tf" data-tf="1d">1d</button>
+        </div>
+      </div>
+      <div id="chart"></div>
+      <div class="status" id="status">Готово.</div>
+    </section>
+
+    <aside class="card">
+      <div class="card-header">
+        <div>
+          <div class="title">Сигнали по таймфрейм</div>
+          <div class="subtitle">Автоматични сигнали (EMA 20/50 + кросоувъри)</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="signals" id="signalsGrid"></div>
+        <div class="note">Логика: Bullish ако EMA20 > EMA50; Bearish ако EMA20 < EMA50; Neutral ако са близо/плоски. Кросоувърите маркират GO LONG/GO SHORT.</div>
+      </div>
+      <div class="card-header">
+        <div class="title">Нива на цената</div>
+        <div class="subtitle">Динамични близки нива</div>
+      </div>
+      <div class="panel">
+        <div class="levels" id="levels"></div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    // ------------------ Config ------------------
+    const COINGECKO_LIST_URL = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=200&page=1&sparkline=false';
+    const BINANCE_KLINES_URL = 'https://api.binance.com/api/v3/klines';
+    const DEFAULT_TF = '3h';
+    const TF_MAP = {
+      '5m': { binance: '5m', limit: 600 },
+      '15m': { binance: '15m', limit: 600 },
+      '1h': { binance: '1h', limit: 800 },
+      '3h': { binance: '3h', limit: 800 },
+      '4h': { binance: '4h', limit: 800 },
+      '1d': { binance: '1d', limit: 1000 },
+    };
+
+    // ------------------ State ------------------
+    let COINS = [];        // {id, symbol, name, market_cap_rank}
+    let CURRENT = null;    // {id, symbol, name, rank, binanceSymbol}
+    let chart, candleSeries, ema20Series, ema50Series, markersShown = [];
+    let ribbonSeries;      // area to color by ribbon trend
+    let currentTF = DEFAULT_TF;
+
+    // ------------------ Utilities ------------------
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    function formatPrice(p) {
+      if (p >= 100) return p.toFixed(2);
+      if (p >= 1) return p.toFixed(4);
+      if (p >= 0.1) return p.toFixed(5);
+      return p.toFixed(6);
+    }
+    function percent(a, b) { return b === 0 ? 0 : ((a - b) / b) * 100; }
+
+    // EMA
+    function ema(values, period) {
+      const k = 2 / (period + 1);
+      const emaArr = [];
+      let prev;
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        if (i < period - 1) {
+          emaArr.push(null);
+          continue;
+        }
+        if (i === period - 1) {
+          // seed with SMA
+          const sma = values.slice(0, period).reduce((a,b)=>a+b,0) / period;
+          emaArr.push(sma);
+          prev = sma;
+        } else {
+          const next = v * k + prev * (1 - k);
+          emaArr.push(next);
+          prev = next;
+        }
+      }
+      return emaArr;
+    }
+
+    // Build markers for crossovers
+    function buildCrossoverMarkers(candles, emaFast, emaSlow) {
+      const markers = [];
+      for (let i = 1; i < candles.length; i++) {
+        const prevFast = emaFast[i-1], prevSlow = emaSlow[i-1];
+        const curFast = emaFast[i],   curSlow = emaSlow[i];
+        if (prevFast == null || prevSlow == null || curFast == null || curSlow == null) continue;
+        const prevDiff = prevFast - prevSlow;
+        const curDiff = curFast - curSlow;
+        if (prevDiff <= 0 && curDiff > 0) {
+          // Bullish crossover -> GO LONG marker at low
+          markers.push({
+            time: candles[i].time,
+            position: 'belowBar',
+            color: '#22c55e',
+            shape: 'arrowUp',
+            text: 'GO LONG'
+          });
+        }
+        if (prevDiff >= 0 && curDiff < 0) {
+          // Bearish crossover -> GO SHORT marker at high
+          markers.push({
+            time: candles[i].time,
+            position: 'aboveBar',
+            color: '#ef4444',
+            shape: 'arrowDown',
+            text: 'GO SHORT'
+          });
+        }
+      }
+      return markers;
+    }
+
+    function ribbonColorPoints(candles, emaFast, emaSlow) {
+      // We’ll color a baseline with green/red depending on EMA relationship
+      // Using an area series baseline hack: return [{time, value, color}]
+      const points = [];
+      for (let i = 0; i < candles.length; i++) {
+        const ef = emaFast[i], es = emaSlow[i];
+        if (ef == null || es == null) continue;
+        const bull = ef > es;
+        points.push({
+          time: candles[i].time,
+          value: (candles[i].high + candles[i].low) / 2,
+          color: bull ? 'rgba(34,197,94,0.22)' : 'rgba(239,68,68,0.22)'
+        });
+      }
+      return points;
+    }
+
+    function classifySignal(emaFast, emaSlow) {
+      if (emaFast == null || emaSlow == null) return 'Neutral';
+      const diff = Math.abs((emaFast - emaSlow) / emaSlow);
+      if (emaFast > emaSlow && diff > 0.0015) return 'Bullish';
+      if (emaFast < emaSlow && diff > 0.0015) return 'Bearish';
+      return 'Neutral';
+    }
+
+    function signalBadgeClass(sig) {
+      if (sig === 'Bullish') return 'signal-badge bull';
+      if (sig === 'Bearish') return 'signal-badge bear';
+      return 'signal-badge neutral';
+    }
+
+    function computeLevels(candles, count = 4) {
+      if (!candles?.length) return [];
+      const last = candles[candles.length - 1];
+      const close = last.close;
+      // simple nearby levels: previous swing highs/lows approximation
+      // pick last N highs/lows from the last 200 candles
+      const recent = candles.slice(-200);
+      const highs = recent.map(c => c.high).sort((a,b)=>b-a);
+      const lows = recent.map(c => c.low).sort((a,b)=>a-b);
+      const levels = [];
+      if (highs.length) levels.push({ price: highs[0], kind: 'res' });
+      if (highs.length > 3) levels.push({ price: highs[3], kind: 'res' });
+      if (lows.length) levels.push({ price: lows[0], kind: 'sup' });
+      if (lows.length > 3) levels.push({ price: lows[3], kind: 'sup' });
+
+      // add close +/- small steps
+      const step = Math.max(close * 0.015, (close - lows[0]) / 15);
+      levels.push({ price: close + step, kind: 'res' });
+      levels.push({ price: close, kind: 'px' });
+      levels.push({ price: close - step, kind: 'sup' });
+
+      // De-duplicate close values
+      const map = new Map();
+      levels.forEach(l => map.set(formatPrice(l.price), l));
+      return Array.from(map.values())
+        .sort((a,b)=>b.price - a.price)
+        .slice(0, count + 2); // include close and two extras
+    }
+
+    // ------------------ Data Fetch ------------------
+    async function loadTopCoins() {
+      const res = await fetch(COINGECKO_LIST_URL);
+      if (!res.ok) throw new Error('Coin list failed');
+      const data = await res.json();
+      COINS = data.map(d => ({
+        id: d.id,
+        symbol: d.symbol.toUpperCase(),
+        name: d.name,
+        market_cap_rank: d.market_cap_rank
+      }));
+      renderDropdown(COINS);
+    }
+
+    function binanceSymbolFor(coin) {
+      // Try simple USDT pair: SYMBOLUSDT
+      return `${coin.symbol.toUpperCase()}USDT`;
+    }
+
+    async function fetchKlines(symbol, interval, limit=500) {
+      const url = `${BINANCE_KLINES_URL}?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('No klines');
+      const arr = await res.json();
+      // [ openTime, open, high, low, close, volume, closeTime, ... ]
+      return arr.map(k => ({
+        time: Math.floor(k[0] / 1000),
+        open: +k[1],
+        high: +k[2],
+        low: +k[3],
+        close: +k[4],
+        volume: +k[5],
+      }));
+    }
+
+    // ------------------ UI: Search/Dropdown ------------------
+    const dropdown = document.getElementById('dropdown');
+    const searchInput = document.getElementById('searchInput');
+    const toggleList = document.getElementById('toggleList');
+
+    function renderDropdown(list) {
+      dropdown.innerHTML = '';
+      list.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'option';
+        div.innerHTML = `
+          <div>${c.name}</div>
+          <div class="badge">${c.symbol}</div>
+          <div class="badge">#${c.market_cap_rank ?? '-'}</div>
+        `;
+        div.addEventListener('click', () => selectCoin(c));
+        dropdown.appendChild(div);
+      });
+    }
+
+    function filterDropdown(q) {
+      const term = q.trim().toLowerCase();
+      const filtered = !term ? COINS
+        : COINS.filter(c =>
+            c.symbol.toLowerCase().includes(term) ||
+            c.name.toLowerCase().includes(term));
+      renderDropdown(filtered.slice(0, 200));
+      if (filtered.length) dropdown.classList.add('open');
+      else dropdown.classList.remove('open');
+    }
+
+    searchInput.addEventListener('input', (e) => filterDropdown(e.target.value));
+    searchInput.addEventListener('focus', () => {
+      if (dropdown.children.length) dropdown.classList.add('open');
+    });
+    toggleList.addEventListener('click', () => {
+      dropdown.classList.toggle('open');
+      if (dropdown.classList.contains('open')) searchInput.focus();
+    });
+    document.addEventListener('click', (e) => {
+      if (!document.getElementById('searchRoot').contains(e.target)) {
+        dropdown.classList.remove('open');
+      }
+    });
+
+    // ------------------ Chart Setup ------------------
+async function initChart() {
+  if (chart) return;
+  const el = document.getElementById('chart');
+
+  // Изчакай докато контейнерът има ширина
+  while (el.clientWidth === 0) {
+    await new Promise(r => setTimeout(r, 50));
+  }
+
+  chart = LightweightCharts.createChart(el, {
+    width: el.clientWidth,
+    height: el.clientHeight,
+    layout: { background: { color: '#0f141b' }, textColor: '#cbd5e1' },
+    rightPriceScale: { borderColor: '#1f2630' },
+    timeScale: { borderColor: '#1f2630' },
+    grid: { vertLines: { color: '#141a22' }, horzLines: { color: '#141a22' } },
+  });
+
+  candleSeries = chart.addCandlestickSeries({
+    upColor: '#16a34a', downColor: '#ef4444',
+    borderUpColor: '#16a34a', borderDownColor: '#ef4444',
+    wickUpColor: '#16a34a', wickDownColor: '#ef4444',
+  });
+  ema20Series = chart.addLineSeries({ color: '#60a5fa', lineWidth: 2 });
+  ema50Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
+  ribbonSeries = chart.addAreaSeries({
+    topColor: 'rgba(34,197,94,0.18)',
+    bottomColor: 'rgba(239,68,68,0.02)',
+    lineColor: 'rgba(0,0,0,0)',
+  });
+
+  // Автоматично преоразмеряване
+  new ResizeObserver(() => {
+    chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
+  }).observe(el);
+}
+
+
+
+    // ------------------ Signals Table & Levels ------------------
+    async function updateSignalsTable(symbol) {
+      const grid = document.getElementById('signalsGrid');
+      grid.innerHTML = '';
+      const tfs = ['5m','15m','1h','4h','1d'];
+      for (const tf of tfs) {
+        let sig = 'Neutral';
+        try {
+          const meta = TF_MAP[tf];
+          const candles = await fetchKlines(symbol, meta.binance, meta.limit);
+          const closes = candles.map(c => c.close);
+          const e20 = ema(closes, 20);
+          const e50 = ema(closes, 50);
+          const last20 = e20[e20.length - 1];
+          const last50 = e50[e50.length - 1];
+          sig = classifySignal(last20, last50);
+        } catch (e) {
+          sig = 'Neutral';
+        }
+        const box = document.createElement('div');
+        box.className = 'signal-box';
+        box.innerHTML = `
+          <div class="signal-row">
+            <div class="signal-label"><b>TF:</b> ${tf}</div>
+            <div class="${signalBadgeClass(sig)}">${sig}</div>
+          </div>
+        `;
+        grid.appendChild(box);
+        // be gentle
+        await sleep(120);
+      }
+    }
+
+    function updateLevels(candles) {
+      const holder = document.getElementById('levels');
+      holder.innerHTML = '';
+      const lvls = computeLevels(candles, 4);
+      lvls.forEach((l, idx) => {
+        const cls = l.kind === 'res' ? 'red' : (l.kind === 'sup' ? 'green' : '');
+        const tag = l.kind === 'res' ? 'Resistance' : (l.kind === 'sup' ? 'Support' : 'Last');
+        const div = document.createElement('div');
+        div.className = `level ${cls}`;
+        div.innerHTML = `
+          <div>${tag}</div>
+          <div>${formatPrice(l.price)}</div>
+        `;
+        holder.appendChild(div);
+      });
+    }
+
+    // ------------------ Main Flow ------------------
+    async function selectCoin(c) {
+      dropdown.classList.remove('open');
+      searchInput.value = `${c.name} (${c.symbol})`;
+      CURRENT = {
+        id: c.id,
+        name: c.name,
+        symbol: c.symbol,
+        rank: c.market_cap_rank,
+        binanceSymbol: binanceSymbolFor(c),
+      };
+      document.getElementById('pairTitle').textContent = `${CURRENT.symbol}/USDT • ${CURRENT.name}`;
+      document.getElementById('pairRank').textContent = `#${CURRENT.rank ?? '-'}`;
+      setStatus('Зареждане на данни...');
+
+      await renderTF(currentTF);
+      updateSignalsTable(CURRENT.binanceSymbol);
+    }
+
+    async function renderTF(tf) {
+      try {
+        currentTF = tf;
+        // update buttons
+        document.querySelectorAll('#tfBar .tf').forEach(b => {
+          b.classList.toggle('active', b.dataset.tf === tf);
+        });
+
+        initChart();
+        setStatus(`Зареждане на ${tf} свещи...`);
+        const meta = TF_MAP[tf] || TF_MAP[DEFAULT_TF];
+        const candles = await fetchKlines(CURRENT.binanceSymbol, meta.binance, meta.limit);
+
+        if (!candles.length) {
+          setStatus('Няма данни за тази двойка/таймфрейм.');
+          return;
+        }
+
+        // Set data
+        candleSeries.setData(candles);
+
+        const closes = candles.map(c => c.close);
+        const e20 = ema(closes, 20);
+        const e50 = ema(closes, 50);
+
+        const ema20Data = candles.map((c, i) => e20[i] == null ? null : ({ time: c.time, value: e20[i] })).filter(Boolean);
+        const ema50Data = candles.map((c, i) => e50[i] == null ? null : ({ time: c.time, value: e50[i] })).filter(Boolean);
+
+        ema20Series.setData(ema20Data);
+        ema50Series.setData(ema50Data);
+
+        // Ribbon coloring via area with color map approximation
+        const mid = candles.map((c,i)=> ({ time: c.time, value: (c.high + c.low)/2 }));
+        ribbonSeries.setData(mid);
+        // We can't change color per point directly; simulate by re-setting series with majority color.
+        const lastE20 = e20[e20.length - 1];
+        const lastE50 = e50[e50.length - 1];
+        const bull = lastE20 != null && lastE50 != null && lastE20 > lastE50;
+        ribbonSeries.applyOptions({
+          topColor: bull ? 'rgba(34,197,94,0.18)' : 'rgba(239,68,68,0.18)',
+          bottomColor: bull ? 'rgba(34,197,94,0.02)' : 'rgba(239,68,68,0.02)',
+        });
+
+        // Markers
+        const markers = buildCrossoverMarkers(candles, e20, e50);
+        candleSeries.setMarkers(markers.slice(-40)); // show recent
+
+        updateLevels(candles);
+        setStatus('Готово.');
+      } catch (e) {
+        console.error(e);
+        setStatus('Грешка при зареждане на данни. Може би символът не е наличен в Binance (USDT).');
+      }
+    }
+
+if (!candles.length) {
+  setStatus('Няма данни от Binance – показвам тестови свещи.');
+  const now = Math.floor(Date.now()/1000);
+  candles = Array.from({length: 100}, (_,i) => {
+    const t = now - (100-i)*1800;
+    const o = 20000 + Math.random()*1000;
+    const h = o + Math.random()*200;
+    const l = o - Math.random()*200;
+    const c = l + Math.random()*(h-l);
+    return {time:t, open:o, high:h, low:l, close:c};
+  });
+}
+
+
+    // TF buttons
+    document.getElementById('tfBar').addEventListener('click', (e) => {
+      const btn = e.target.closest('.tf');
+      if (!btn || !CURRENT) return;
+      renderTF(btn.dataset.tf);
+    });
+
+    // ------------------ Init ------------------
+    (async function init() {
+      try {
+        await loadTopCoins();
+        // Preselect BTC for demo
+        const btc = COINS.find(c => c.symbol === 'BTC') || COINS[0];
+        if (btc) selectCoin(btc);
+      } catch (e) {
+        console.error(e);
+        setStatus('Грешка при зареждане на списъка с монети. Опитайте отново.');
+      }
+    })();
+  </script>
+</body>
+</html>
