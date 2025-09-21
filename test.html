@@ -223,7 +223,7 @@
     <div class="search" id="searchRoot">
       <div class="combo">
         <input id="searchInput" placeholder="Търси валута (пример: BTC, ETH, SOL)..." autocomplete="off" />
-        <button id="toggleList">▼</button>
+        <button id="toggleList" title="Покажи/скрий списъка">▼</button>
       </div>
       <div class="dropdown" id="dropdown"></div>
     </div>
@@ -298,15 +298,14 @@
 
     // ------------------ Utilities ------------------
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
     function formatPrice(p) {
       if (p >= 100) return p.toFixed(2);
       if (p >= 1) return p.toFixed(4);
       if (p >= 0.1) return p.toFixed(5);
       return p.toFixed(6);
     }
-    function percent(a, b) { return b === 0 ? 0 : ((a - b) / b) * 100; }
 
-    // EMA
     function ema(values, period) {
       const k = 2 / (period + 1);
       const emaArr = [];
@@ -330,7 +329,6 @@
       return emaArr;
     }
 
-    // Build markers for crossovers
     function buildCrossoverMarkers(candles, emaFast, emaSlow) {
       const markers = [];
       for (let i = 1; i < candles.length; i++) {
@@ -340,22 +338,10 @@
         const prevDiff = prevFast - prevSlow;
         const curDiff = curFast - curSlow;
         if (prevDiff <= 0 && curDiff > 0) {
-          markers.push({
-            time: candles[i].time,
-            position: 'belowBar',
-            color: '#22c55e',
-            shape: 'arrowUp',
-            text: 'GO LONG'
-          });
+          markers.push({ time: candles[i].time, position: 'belowBar', color: '#22c55e', shape: 'arrowUp', text: 'GO LONG' });
         }
         if (prevDiff >= 0 && curDiff < 0) {
-          markers.push({
-            time: candles[i].time,
-            position: 'aboveBar',
-            color: '#ef4444',
-            shape: 'arrowDown',
-            text: 'GO SHORT'
-          });
+          markers.push({ time: candles[i].time, position: 'aboveBar', color: '#ef4444', shape: 'arrowDown', text: 'GO SHORT' });
         }
       }
       return markers;
@@ -387,15 +373,13 @@
       if (highs.length > 3) levels.push({ price: highs[3], kind: 'res' });
       if (lows.length) levels.push({ price: lows[0], kind: 'sup' });
       if (lows.length > 3) levels.push({ price: lows[3], kind: 'sup' });
-      const step = Math.max(close * 0.015, (close - lows[0]) / 15);
+      const step = Math.max(close * 0.015, lows[0] != null ? (close - lows[0]) / 15 : close * 0.015);
       levels.push({ price: close + step, kind: 'res' });
       levels.push({ price: close, kind: 'px' });
       levels.push({ price: close - step, kind: 'sup' });
       const map = new Map();
       levels.forEach(l => map.set(formatPrice(l.price), l));
-      return Array.from(map.values())
-        .sort((a,b)=>b.price - a.price)
-        .slice(0, count + 2);
+      return Array.from(map.values()).sort((a,b)=>b.price - a.price).slice(0, count + 2);
     }
 
     // ------------------ Data Fetch ------------------
@@ -476,8 +460,8 @@
       }
     });
 
-    // ------------------ Chart Setup with reliable sizing ------------------
-    async function waitForContainerSize(el, timeoutMs = 3000) {
+    // ------------------ Chart sizing helpers ------------------
+    async function waitForContainerSize(el, timeoutMs = 4000) {
       const start = performance.now();
       while ((el.clientWidth === 0 || el.clientHeight === 0) && performance.now() - start < timeoutMs) {
         await new Promise(r => setTimeout(r, 50));
@@ -568,7 +552,7 @@
           </div>
         `;
         grid.appendChild(box);
-        await sleep(180); // по-нежен към API
+        await sleep(180);
       }
     }
 
@@ -627,25 +611,22 @@
           usedMock = true;
         }
         if (!candles || !candles.length) {
-          // Fallback: тестови свещи, за да валидираме рендера
           usedMock = true;
           const now = Math.floor(Date.now() / 1000);
-          const stepSec = meta.binance.endsWith('d') ? 86400
-                         : meta.binance.endsWith('h') ? parseInt(meta.binance) * 3600
-                         : meta.binance.endsWith('m') ? parseInt(meta.binance) * 60
-                         : 1800;
+          const stepSec =
+            meta.binance.endsWith('d') ? 86400 :
+            meta.binance.endsWith('h') ? parseInt(meta.binance) * 3600 :
+            meta.binance.endsWith('m') ? parseInt(meta.binance) * 60 : 1800;
           let px = 25000;
-          candles = [];
-          const n = 180;
-          for (let i = n; i > 0; i--) {
-            const t = now - i * stepSec;
+          candles = Array.from({ length: 180 }, (_, idx) => {
+            const t = now - (180 - idx) * stepSec;
             const o = px + (Math.random() - 0.5) * 50;
             const h = o + Math.random() * 80;
             const l = o - Math.random() * 80;
             const c = l + Math.random() * (h - l);
-            candles.push({ time: t, open: o, high: h, low: l, close: c, volume: Math.random() * 10 });
             px = c;
-          }
+            return { time: t, open: o, high: h, low: l, close: c, volume: Math.random() * 10 };
+          });
         }
 
         if (!candles.length) {
@@ -665,7 +646,6 @@
         ema20Series.setData(ema20Data);
         ema50Series.setData(ema50Data);
 
-        // Ribbon coloring approximation: set overall color by last EMA relation
         const lastE20 = e20[e20.length - 1];
         const lastE50 = e50[e50.length - 1];
         const bull = lastE20 != null && lastE50 != null && lastE20 > lastE50;
@@ -693,16 +673,38 @@
       renderTF(btn.dataset.tf);
     });
 
-    // ------------------ Init ------------------
+    // ------------------ Init with hard fallback ------------------
     (async function init() {
       try {
-        await loadTopCoins();
-        // Preselect BTC for demo
-        const btc = COINS.find(c => c.symbol === 'BTC') || COINS[0];
-        if (btc) selectCoin(btc);
+        setStatus('Зареждане на списък с монети...');
+        const loadCoins = (async () => {
+          await loadTopCoins();
+          const btc = COINS.find(c => c.symbol === 'BTC') || COINS[0];
+          if (!btc) throw new Error('No coins loaded');
+          return btc;
+        })();
+
+        // Fail-fast на 3s за CoinGecko, за да стартира графиката независимо
+        let firstCoin;
+        try {
+          firstCoin = await Promise.race([
+            loadCoins,
+            new Promise((_, rej) => setTimeout(() => rej(new Error('Coin list timeout')), 3000))
+          ]);
+        } catch {
+          firstCoin = { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', market_cap_rank: 1 };
+          renderDropdown([]); // празен списък, UI все пак е стабилен
+        }
+
+        await selectCoin(firstCoin);
       } catch (e) {
         console.error(e);
-        setStatus('Грешка при зареждане на списъка с монети. Опитайте отново.');
+        // Абсолютен fallback към BTC/USDT
+        CURRENT = { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', rank: 1, binanceSymbol: 'BTCUSDT' };
+        document.getElementById('pairTitle').textContent = 'BTC/USDT • Bitcoin';
+        document.getElementById('pairRank').textContent = '#1';
+        await initChart();
+        await renderTF(DEFAULT_TF);
       }
     })();
   </script>
