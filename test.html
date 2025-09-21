@@ -4,16 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Crypto Signals Dashboard</title>
-
-  <!-- Дублиран CDN fallback: ако първият не се зареди, вторият ще покрие -->
-  <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
-  <script>
-    // Ако първият CDN не зареди библиотеката, пробваме втори
-    if (!window.LightweightCharts) {
-      document.write('<script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"><\/script>');
-    }
-  </script>
-
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     :root {
       --bg: #0e1116;
@@ -27,259 +18,97 @@
       --red: #ef4444;
     }
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-    }
-    header {
-      padding: 14px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      background: linear-gradient(180deg, #121722, #0e1116);
-      position: sticky; top: 0; z-index: 5;
-    }
-    .brand { font-weight: 700; letter-spacing: .4px; color: #cbd5e1; }
-    .content {
-      display: grid;
-      grid-template-columns: 1.3fr 340px;
-      gap: 16px;
-      padding: 16px;
-    }
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      overflow: hidden;
-      min-height: 200px;
-    }
-    .card-header {
-      padding: 12px 14px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .title { font-weight: 600; display: flex; align-items: center; gap: 10px; }
-    .subtitle { color: var(--muted); font-size: 12px; }
-    .toolbar { display: flex; align-items: center; gap: 8px; }
-    .toolbar .tf {
-      background: var(--panel-2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-    .toolbar .tf.active { outline: 1px solid var(--blue); color: #dbeafe; }
-    #chart {
-      width: 100% !important;
-      height: 560px !important;
-      min-height: 400px;
-      display: block;
-      background: #0f141b;
-    }
-    .panel { padding: 12px 14px; }
-    .signals {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .signal-box { background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px; }
-    .signal-row { display: flex; align-items: center; justify-content: space-between; margin: 6px 0; }
-    .signal-label { color: var(--muted); font-size: 12px; }
-    .signal-badge { padding: 4px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--border); }
-    .bull { background: rgba(34,197,94,0.12); color: #86efac; }
-    .bear { background: rgba(239,68,68,0.12); color: #fca5a5; }
-    .neutral { background: rgba(234,179,8,0.12); color: #fde68a; }
-    .levels { display: grid; gap: 8px; }
-    .level {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 10px; background: var(--panel-2); border: 1px solid var(--border);
-      border-radius: 8px; font-variant-numeric: tabular-nums;
-    }
-    .level.red { outline: 1px dashed rgba(239,68,68,0.35); }
-    .level.green { outline: 1px dashed rgba(34,197,94,0.35); }
-    .status { color: var(--muted); font-size: 12px; padding: 8px 14px; border-top: 1px solid var(--border); }
-    @media (max-width: 1024px) {
-      .content { grid-template-columns: 1fr; }
-      #chart { height: 460px !important; }
-    }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: Inter, sans-serif; }
+    header { padding: 14px 18px; background: #121722; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+    .brand { font-weight: 700; color: #cbd5e1; }
+    #chart { width: 100% !important; height: 560px !important; min-height: 400px; display: block; background: var(--panel-2); }
+    .status { padding: 8px 14px; font-size: 12px; color: var(--muted); }
+    .toolbar { display: flex; gap: 8px; padding: 12px 14px; }
+    .toolbar .tf { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; color: var(--text); cursor: pointer; font-size: 12px; }
+    .toolbar .tf.active { outline: 1px solid var(--blue); }
   </style>
 </head>
 <body>
-  <header>
-    <div class="brand">Анализ и сигнали • Крипто</div>
-  </header>
-
-  <main class="content">
-    <section class="card">
-      <div class="card-header">
-        <div class="title">
-          <span id="pairTitle">BTC/USDT • Bitcoin</span>
-          <span class="badge" id="pairRank">#1</span>
-        </div>
-        <div class="toolbar" id="tfBar">
-          <button class="tf active" data-tf="3h">3h</button>
-          <button class="tf" data-tf="1h">1h</button>
-          <button class="tf" data-tf="4h">4h</button>
-          <button class="tf" data-tf="1d">1d</button>
-        </div>
-      </div>
-      <div id="chart"></div>
-      <div class="status" id="status">Инициализация...</div>
-    </section>
-
-    <aside class="card">
-      <div class="card-header">
-        <div>
-          <div class="title">Сигнали по таймфрейм</div>
-          <div class="subtitle">EMA 20/50 + кросоувъри</div>
-        </div>
-      </div>
-      <div class="panel">
-        <div class="signals" id="signalsGrid"></div>
-        <div class="status">Логика: Bullish ако EMA20 > EMA50; Bearish ако EMA20 < EMA50; Neutral ако са близо/плоски.</div>
-      </div>
-      <div class="card-header">
-        <div class="title">Нива на цената</div>
-        <div class="subtitle">Динамични близки нива</div>
-      </div>
-      <div class="panel">
-        <div class="levels" id="levels"></div>
-      </div>
-    </aside>
-  </main>
+  <header><div class="brand">Crypto Signals • Proxy Edition</div></header>
+  <div class="toolbar" id="tfBar">
+    <button class="tf active" data-tf="3h">3h</button>
+    <button class="tf" data-tf="1h">1h</button>
+    <button class="tf" data-tf="4h">4h</button>
+    <button class="tf" data-tf="1d">1d</button>
+  </div>
+  <div id="chart"></div>
+  <div class="status" id="status">Инициализация...</div>
 
   <script>
-    // --------------- Diagnostics ---------------
-    const log = (...a) => { console.log('[chart]', ...a); };
-    const setStatus = (t) => { const el = document.getElementById('status'); if (el) el.textContent = t; };
+    // 1) Proxy endpoint (замени YOUR_WORKER_SUBDOMAIN)
+    const BINANCE_KLINES_URL = 'https://my-worker.haralambi.workers.dev/klines';
 
-    // --------------- Globals ---------------
-    const BINANCE_KLINES_URL = 'https://api.binance.com/api/v3/klines';
+    // 2) Timeframes
     const DEFAULT_TF = '3h';
     const TF_MAP = { '1h':'1h', '3h':'3h', '4h':'4h', '1d':'1d' };
 
+    // 3) Chart globals
     let chart, candleSeries, ema20Series, ema50Series, ribbonSeries;
-    let CURRENT = { symbol: 'BTC', name: 'Bitcoin', binanceSymbol: 'BTCUSDT', rank: 1 };
     let currentTF = DEFAULT_TF;
 
-    // --------------- Helpers ---------------
-    async function waitForContainerSize(el, timeoutMs = 4000) {
+    const log = (...a) => console.log('[chart]', ...a);
+    const setStatus = t => document.getElementById('status').textContent = t;
+
+    // 4) Helpers
+    async function waitSize(el, timeout = 3000) {
       const start = performance.now();
-      while ((el.clientWidth === 0 || el.clientHeight === 0) && performance.now() - start < timeoutMs) {
-        await new Promise(r => setTimeout(r, 50));
+      while ((el.clientWidth===0||el.clientHeight===0) && performance.now()-start<timeout) {
+        await new Promise(r=>setTimeout(r,50));
       }
-      return { w: el.clientWidth || 960, h: el.clientHeight || 560 };
+      return { w:el.clientWidth||800, h:el.clientHeight||560 };
     }
 
     function ema(values, period) {
-      const k = 2 / (period + 1);
-      const out = [];
-      let prev;
-      for (let i = 0; i < values.length; i++) {
-        const v = values[i];
-        if (i < period - 1) { out.push(null); continue; }
-        if (i === period - 1) {
-          const sma = values.slice(0, period).reduce((a,b)=>a+b,0) / period;
-          out.push(sma); prev = sma;
-        } else {
-          const e = v * k + prev * (1 - k);
-          out.push(e); prev = e;
-        }
+      const k=2/(period+1), out=[], len=values.length; let prev;
+      for(let i=0;i<len;i++){
+        if(i<period-1){ out.push(null); continue; }
+        if(i===period-1){ const sma=values.slice(0,period).reduce((a,b)=>a+b,0)/period; out.push(sma); prev=sma; }
+        else { const e=values[i]*k + prev*(1-k); out.push(e); prev=e; }
       }
       return out;
     }
 
-    function buildCrossoverMarkers(candles, emaFast, emaSlow) {
-      const markers = [];
-      for (let i = 1; i < candles.length; i++) {
-        const a0 = emaFast[i-1], b0 = emaSlow[i-1];
-        const a1 = emaFast[i],   b1 = emaSlow[i];
-        if (a0==null||b0==null||a1==null||b1==null) continue;
-        if (a0 <= b0 && a1 > b1) {
-          markers.push({ time: candles[i].time, position:'belowBar', color:'#22c55e', shape:'arrowUp', text:'GO LONG' });
-        }
-        if (a0 >= b0 && a1 < b1) {
-          markers.push({ time: candles[i].time, position:'aboveBar', color:'#ef4444', shape:'arrowDown', text:'GO SHORT' });
-        }
+    function buildMarkers(candles, f, s) {
+      const m=[];
+      for(let i=1;i<candles.length;i++){
+        const p=f[i-1]-s[i-1], c=f[i]-s[i];
+        if(p<=0&&c>0) m.push({ time:candles[i].time, position:'belowBar', shape:'arrowUp', color:'#22c55e', text:'GO LONG' });
+        if(p>=0&&c<0) m.push({ time:candles[i].time, position:'aboveBar', shape:'arrowDown', color:'#ef4444', text:'GO SHORT' });
       }
-      return markers.slice(-60);
+      return m;
     }
 
-    function computeLevels(candles, count = 4) {
-      if (!candles?.length) return [];
-      const last = candles[candles.length-1].close;
-      const recent = candles.slice(-200);
-      const highs = recent.map(c=>c.high).sort((a,b)=>b-a);
-      const lows  = recent.map(c=>c.low).sort((a,b)=>a-b);
-      const lvls = [];
-      if (highs[0]) lvls.push({ price: highs[0], kind: 'res' });
-      if (highs[3]) lvls.push({ price: highs[3], kind: 'res' });
-      if (lows[0])  lvls.push({ price: lows[0],  kind: 'sup' });
-      if (lows[3])  lvls.push({ price: lows[3],  kind: 'sup' });
-      const step = Math.max(last*0.015, lows[0] ? (last - lows[0])/15 : last*0.015);
-      lvls.push({ price: last + step, kind:'res' }, { price:last, kind:'px' }, { price:last - step, kind:'sup' });
-      const uniq = new Map(); lvls.forEach(l=>uniq.set(l.price.toFixed(2), l));
-      return Array.from(uniq.values()).sort((a,b)=>b.price-a.price).slice(0, count+2);
-    }
-
-    function renderLevels(candles) {
-      const holder = document.getElementById('levels'); if (!holder) return;
-      holder.innerHTML = '';
-      computeLevels(candles).forEach(l => {
-        const div = document.createElement('div');
-        div.className = 'level ' + (l.kind==='res' ? 'red' : (l.kind==='sup' ? 'green' : ''));
-        div.innerHTML = `<div>${l.kind==='res'?'Resistance':l.kind==='sup'?'Support':'Last'}</div><div>${l.price.toFixed(2)}</div>`;
-        holder.appendChild(div);
-      });
-    }
-
-    // --------------- Chart ---------------
+    // 5) Init chart
     async function initChart() {
-      if (chart) return;
-      if (!window.LightweightCharts) {
-        setStatus('Грешка: библиотеката за графики не се зареди.');
-        console.error('LightweightCharts is not available.');
-        return;
-      }
-
+      if(chart) return;
+      if(!window.LightweightCharts) return setStatus('Error loading charts lib');
       const el = document.getElementById('chart');
-      const { w, h } = await waitForContainerSize(el);
-      log('container size', w, h);
-
+      const {w,h} = await waitSize(el);
       chart = LightweightCharts.createChart(el, {
-        width: w,
-        height: h,
-        layout: { background: { color: '#0f141b' }, textColor: '#cbd5e1' },
-        rightPriceScale: { borderColor: '#1f2630', scaleMargins: { top: 0.1, bottom: 0.1 } },
-        timeScale: { borderColor: '#1f2630' },
-        grid: { vertLines: { color: '#141a22' }, horzLines: { color: '#141a22' } },
-        crosshair: { mode: 1 },
+        width: w, height: h,
+        layout:{background:{color:'#0f141b'},textColor:'#cbd5e1'},
+        rightPriceScale:{borderColor:'#1f2630',scaleMargins:{top:0.1,bottom:0.1}},
+        timeScale:{borderColor:'#1f2630'},
+        grid:{vertLines:{color:'#141a22'},horzLines:{color:'#141a22'}},
       });
-
       candleSeries = chart.addCandlestickSeries({
-        upColor: '#16a34a', downColor: '#ef4444',
-        borderUpColor: '#16a34a', borderDownColor: '#ef4444',
-        wickUpColor: '#16a34a', wickDownColor: '#ef4444',
+        upColor:'#16a34a', downColor:'#ef4444',
+        borderUpColor:'#16a34a', borderDownColor:'#ef4444',
+        wickUpColor:'#16a34a', wickDownColor:'#ef4444',
       });
-      ema20Series = chart.addLineSeries({ color: '#60a5fa', lineWidth: 2 });
-      ema50Series = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
+      ema20Series = chart.addLineSeries({ color:'#60a5fa', lineWidth:2 });
+      ema50Series = chart.addLineSeries({ color:'#f59e0b', lineWidth:2 });
       ribbonSeries = chart.addAreaSeries({
-        topColor: 'rgba(34,197,94,0.18)',
-        bottomColor: 'rgba(239,68,68,0.02)',
-        lineColor: 'rgba(0,0,0,0)',
-        lineWidth: 1,
+        topColor:'rgba(34,197,94,0.18)', bottomColor:'rgba(239,68,68,0.02)',
+        lineColor:'rgba(0,0,0,0)', lineWidth:1
       });
 
-      if ('ResizeObserver' in window) {
+      if('ResizeObserver' in window){
         new ResizeObserver(() => {
           chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
         }).observe(el);
@@ -290,104 +119,66 @@
       }
     }
 
-    // --------------- Data ---------------
-    async function fetchKlines(symbol, interval, limit=500) {
-      const url = `${BINANCE_KLINES_URL}?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+    // 6) Fetch via proxy
+    async function fetchKlines(symbol, interval, limit=500){
+      const url=`${BINANCE_KLINES_URL}?symbol=${symbol}&interval=${interval}&limit=${limit}`;
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`Binance error: ${res.status}`);
-      const arr = await res.json();
-      return arr.map(k => ({
-        time: Math.floor(k[0] / 1000),
-        open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5],
+      if(!res.ok) throw new Error(`Proxy error ${res.status}`);
+      const data = await res.json();
+      return data.map(k=>({
+        time:Math.floor(k[0]/1000),
+        open:+k[1], high:+k[2], low:+k[3], close:+k[4]
       }));
     }
 
-    function generateMockCandles(stepSec = 1800, n = 180) {
-      const now = Math.floor(Date.now() / 1000);
-      let px = 25000;
-      const out = [];
-      for (let i = n; i > 0; i--) {
-        const t = now - i * stepSec;
-        const o = px + (Math.random() - 0.5) * 50;
-        const h = o + Math.random() * 80;
-        const l = o - Math.random() * 80;
-        const c = l + Math.random() * (h - l);
-        out.push({ time: t, open: o, high: h, low: l, close: c, volume: Math.random() * 10 });
-        px = c;
-      }
-      return out;
-    }
-
-    // --------------- Render flow ---------------
-    async function renderTF(tf) {
+    // 7) Render TF
+    async function renderTF(tf){
       currentTF = tf;
-      const btns = document.querySelectorAll('#tfBar .tf');
-      btns.forEach(b => b.classList.toggle('active', b.dataset.tf === tf));
-
+      document.querySelectorAll('#tfBar .tf').forEach(b=>b.classList.toggle('active', b.dataset.tf===tf));
       await initChart();
-      if (!chart) return;
+      setStatus(`Loading ${tf}…`);
 
-      setStatus(`Рендер на ${tf}...`);
-      const stepSec =
-        tf.endsWith('d') ? 86400 :
-        tf.endsWith('h') ? parseInt(tf) * 3600 :
-        tf.endsWith('m') ? parseInt(tf) * 60 : 1800;
-
-      // 1) Първо: показваме тестова графика (за да видиш визуално, че работи)
-      const mock = generateMockCandles(stepSec, 180);
-      candleSeries.setData(mock);
-      const closesMock = mock.map(c => c.close);
-      const e20m = ema(closesMock, 20), e50m = ema(closesMock, 50);
-      ema20Series.setData(mock.map((c, i) => e20m[i] == null ? null : ({ time: c.time, value: e20m[i] })).filter(Boolean));
-      ema50Series.setData(mock.map((c, i) => e50m[i] == null ? null : ({ time: c.time, value: e50m[i] })).filter(Boolean));
-      ribbonSeries.setData(mock.map(c => ({ time: c.time, value: (c.high + c.low) / 2 })));
-      candleSeries.setMarkers(buildCrossoverMarkers(mock, e20m, e50m));
-      renderLevels(mock);
-      chart.timeScale().fitContent();
-      setStatus('Показвам тестови данни, опитвам Binance...');
-
-      // 2) После: опитваме реални данни от Binance; ако стане — заместваме mock
+      let candles;
       try {
-        const real = await fetchKlines(CURRENT.binanceSymbol, TF_MAP[tf] || '3h', 800);
-        if (real && real.length) {
-          candleSeries.setData(real);
-          const closes = real.map(c => c.close);
-          const e20 = ema(closes, 20), e50 = ema(closes, 50);
-          ema20Series.setData(real.map((c, i) => e20[i] == null ? null : ({ time: c.time, value: e20[i] })).filter(Boolean));
-          ema50Series.setData(real.map((c, i) => e50[i] == null ? null : ({ time: c.time, value: e50[i] })).filter(Boolean));
-          ribbonSeries.setData(real.map(c => ({ time: c.time, value: (c.high + c.low) / 2 })));
-          candleSeries.setMarkers(buildCrossoverMarkers(real, e20, e50));
-          renderLevels(real);
-          chart.timeScale().fitContent();
-          setStatus('Готово (реални данни).');
-          log('real candles', real.length);
-        } else {
-          setStatus('Останах на тестови данни (празен отговор от API).');
-          log('empty real candles');
+        candles = await fetchKlines('BTCUSDT', tf, 800);
+      } catch(e){
+        console.warn('Proxy fetch failed, showing test data', e);
+        // fallback mock 180 bars
+        const now = Math.floor(Date.now()/1000);
+        let px=25000; candles=[];
+        const step = tf.endsWith('d')?86400:parseInt(tf)*3600;
+        for(let i=180;i>0;i--){
+          const t=now-i*step;
+          const o=px+(Math.random()-0.5)*50;
+          const h=o+Math.random()*80;
+          const l=o-Math.random()*80;
+          const c=l+Math.random()*(h-l);
+          candles.push({time:t,open:o,high:h,low:l,close:c});
+          px=c;
         }
-      } catch (e) {
-        console.warn('Binance fetch failed, staying on mock.', e);
-        setStatus('Останах на тестови данни (проблем с API).');
+        setStatus('Test data (proxy error)');
       }
+
+      candleSeries.setData(candles);
+      const closes = candles.map(x=>x.close);
+      const e20 = ema(closes,20), e50=ema(closes,50);
+      ema20Series.setData(candles.map((c,i)=>e20[i]?{time:c.time,value:e20[i]}:null).filter(Boolean));
+      ema50Series.setData(candles.map((c,i)=>e50[i]?{time:c.time,value:e50[i]}:null).filter(Boolean));
+      ribbonSeries.setData(candles.map(c=>({time:c.time,value:(c.high+c.low)/2})));
+      candleSeries.setMarkers(buildMarkers(candles,e20,e50));
+      chart.timeScale().fitContent();
+      setStatus('Ready');
     }
 
-    // --------------- Init ---------------
-    (async function init() {
-      try {
-        document.getElementById('pairTitle').textContent = 'BTC/USDT • Bitcoin';
-        document.getElementById('pairRank').textContent = '#1';
-        await renderTF(DEFAULT_TF);
-      } catch (e) {
-        console.error(e);
-        setStatus('Фатална грешка при инициализация.');
-      }
+    // 8) Init flow
+    (async ()=>{
+      await renderTF(DEFAULT_TF);
     })();
 
-    // --------------- TF controls ---------------
-    document.getElementById('tfBar').addEventListener('click', (e) => {
-      const btn = e.target.closest('.tf');
-      if (!btn) return;
-      renderTF(btn.dataset.tf);
+    // 9) TF buttons
+    document.getElementById('tfBar').addEventListener('click', e=>{
+      const b=e.target.closest('.tf');
+      if(b) renderTF(b.dataset.tf);
     });
   </script>
 </body>
