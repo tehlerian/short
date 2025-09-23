@@ -1,232 +1,43 @@
 <!DOCTYPE html>
 <html lang="bg">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Crypto Signals Dashboard — CORS Free</title>
-
-  <!-- 1) Вграден Service Worker за proxy на Binance API -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      const swCode = `
-        self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
-        self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
-        self.addEventListener('fetch', e => {
-          const req = e.request;
-          // прихващаме само klines endpoint
-          if (req.url.startsWith('https://api.binance.com/api/v3/klines')) {
-            e.respondWith((async () => {
-              const res = await fetch(req);
-              const buf = await res.arrayBuffer();
-              const headers = new Headers(res.headers);
-              headers.set('Access-Control-Allow-Origin', '*');
-              headers.set('Access-Control-Allow-Methods', 'GET,OPTIONS');
-              headers.set('Access-Control-Allow-Headers', 'Content-Type');
-              return new Response(buf, {
-                status: res.status,
-                headers
-              });
-            })());
-          }
-        });
-      `;
-      const blob = new Blob([swCode], { type: 'application/javascript' });
-      const swUrl = URL.createObjectURL(blob);
-      navigator.serviceWorker.register(swUrl)
-        .then(() => console.log('[SW] registered'))
-        .catch(err => console.error('[SW] failed', err));
-    } else {
-      console.warn('Service Worker not supported');
-    }
-  </script>
-
+  <meta charset="UTF-8"/>
+  <title>Live BTC/USDT via WS</title>
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-
   <style>
-    :root {
-      --bg: #0e1116; --panel: #151a22; --panel-2: #0f141b;
-      --text: #e6edf3; --muted: #98a2b3; --border: #1f2630;
-      --blue: #60a5fa; --green: #22c55e; --red: #ef4444;
-    }
-    * { box-sizing: border-box; }
-    html, body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family: Inter, sans-serif; }
-    header { padding:14px; background:#121722; border-bottom:1px solid var(--border); position:sticky; top:0; z-index:10; }
-    .brand { font-weight:700; color:#cbd5e1; }
-    #chart { width:100% !important; height:560px !important; min-height:400px; background:var(--panel-2); }
-    .status { padding:8px 14px; font-size:12px; color:var(--muted); }
-    .toolbar { display:flex; gap:8px; padding:12px 14px; }
-    .toolbar .tf { background:var(--panel-2); border:1px solid var(--border); border-radius:6px; padding:6px 12px; color:var(--text); cursor:pointer; font-size:12px; }
-    .toolbar .tf.active { outline:1px solid var(--blue); }
+    body{margin:0;background:#0f141b;color:#cbd5e1;font-family:sans-serif}
+    #chart{width:100%;height:560px}
   </style>
 </head>
-
 <body>
-  <header><div class="brand">Crypto Signals • No-CORS Edition</div></header>
-  <div class="toolbar" id="tfBar">
-    <button class="tf active" data-tf="3h">3h</button>
-    <button class="tf" data-tf="1h">1h</button>
-    <button class="tf" data-tf="4h">4h</button>
-    <button class="tf" data-tf="1d">1d</button>
-  </div>
   <div id="chart"></div>
-  <div class="status" id="status">Инициализация...</div>
-
   <script>
-    // конфигурация
-    const BINANCE_KLINES_URL = 'https://api.binance.com/api/v3/klines';
-    const DEFAULT_TF = '3h';
-    const TF_MAP = { '1h':'1h', '3h':'3h', '4h':'4h', '1d':'1d' };
-
-    // глобални инстанции
-    let chart, candleSeries, ema20Series, ema50Series, ribbonSeries;
-    let currentTF = DEFAULT_TF;
-
-    const log = (...a) => console.log('[chart]', ...a);
-    const setStatus = t => document.getElementById('status').textContent = t;
-
-    // utility: изчаква контейнера да има размер
-    async function waitSize(el, timeout=3000) {
-      const t0 = performance.now();
-      while((el.clientWidth===0||el.clientHeight===0) && performance.now()-t0 < timeout) {
-        await new Promise(r => setTimeout(r,50));
-      }
-      return { w: el.clientWidth||800, h: el.clientHeight||560 };
-    }
-
-    // EMA изчисления
-    function ema(values, period) {
-      const k = 2/(period+1), out=[], len=values.length; let prev;
-      for(let i=0; i<len; i++){
-        if(i<period-1){ out.push(null); continue; }
-        if(i===period-1){
-          const sma = values.slice(0,period).reduce((a,b)=>a+b,0)/period;
-          out.push(sma); prev=sma;
-        } else {
-          const e = values[i]*k + prev*(1-k);
-          out.push(e); prev=e;
-        }
-      }
-      return out;
-    }
-
-    // кросоувър маркери
-    function buildMarkers(candles, f, s) {
-      const m = [];
-      for(let i=1; i<candles.length; i++){
-        const p0 = f[i-1]-s[i-1], p1 = f[i]-s[i];
-        if(p0<=0 && p1>0) m.push({
-          time: candles[i].time, position:'belowBar', shape:'arrowUp', color:'var(--green)', text:'GO LONG'
-        });
-        if(p0>=0 && p1<0) m.push({
-          time: candles[i].time, position:'aboveBar', shape:'arrowDown', color:'var(--red)', text:'GO SHORT'
-        });
-      }
-      return m;
-    }
-
-    // инициализиране на графиката
-    async function initChart() {
-      if(chart) return;
-      if(!window.LightweightCharts) return setStatus('Графична библиотека не е заредена');
-      const el = document.getElementById('chart');
-      const {w,h} = await waitSize(el);
-      log('container', w, h);
-
-      chart = LightweightCharts.createChart(el, {
-        width: w, height: h,
-        layout:{ background:{color:'#0f141b'}, textColor:'#cbd5e1' },
-        rightPriceScale:{ borderColor:'#1f2630', scaleMargins:{top:0.1,bottom:0.1} },
-        timeScale:{ borderColor:'#1f2630' },
-        grid:{ vertLines:{color:'#141a22'}, horzLines:{color:'#141a22'} },
-      });
-      candleSeries = chart.addCandlestickSeries({
-        upColor:'#16a34a', downColor:'#ef4444',
-        borderUpColor:'#16a34a', borderDownColor:'#ef4444',
-        wickUpColor:'#16a34a', wickDownColor:'#ef4444',
-      });
-      ema20Series = chart.addLineSeries({ color:'#60a5fa', lineWidth:2 });
-      ema50Series = chart.addLineSeries({ color:'#f59e0b', lineWidth:2 });
-      ribbonSeries = chart.addAreaSeries({
-        topColor:'rgba(34,197,94,0.18)',
-        bottomColor:'rgba(239,68,68,0.02)',
-        lineColor:'rgba(0,0,0,0)', lineWidth:1
-      });
-
-      if('ResizeObserver' in window){
-        new ResizeObserver(() => {
-          chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
-        }).observe(el);
-      } else {
-        window.addEventListener('resize', () => {
-          chart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
-        });
-      }
-    }
-
-    // fetch към Binance (ще се прихване от Service Worker)
-    async function fetchKlines(symbol, interval, limit=500) {
-      const url = `${BINANCE_KLINES_URL}?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-      const res = await fetch(url);
-      if(!res.ok) throw new Error(`API error ${res.status}`);
-      const data = await res.json();
-      return data.map(k => ({
-        time: Math.floor(k[0]/1000),
-        open: +k[1], high:+k[2], low:+k[3], close:+k[4]
-      }));
-    }
-
-    // рендер на конкретен таймфрейм
-    async function renderTF(tf) {
-      currentTF = tf;
-      document.querySelectorAll('#tfBar .tf').forEach(b => {
-        b.classList.toggle('active', b.dataset.tf === tf);
-      });
-      await initChart();
-      setStatus(`Зареждам ${tf}...`);
-
-      let candles;
-      try {
-        candles = await fetchKlines('BTCUSDT', tf, 800);
-        setStatus('Готово (реални данни)');
-      } catch(e) {
-        console.warn('fetchKlines failed, showing mock', e);
-        // fallback mock 180 бара
-        const now = Math.floor(Date.now()/1000);
-        let px = 25000;
-        const step = tf.endsWith('d') ? 86400 : parseInt(tf)*3600;
-        candles = [];
-        for(let i=180; i>0; i--){
-          const t = now - i*step;
-          const o = px + (Math.random()-0.5)*50;
-          const h = o + Math.random()*80;
-          const l = o - Math.random()*80;
-          const c = l + Math.random()*(h-l);
-          candles.push({time:t, open:o, high:h, low:l, close:c});
-          px = c;
-        }
-        setStatus('Показвам тестови данни');
-      }
-
-      candleSeries.setData(candles);
-      const closes = candles.map(c=>c.close);
-      const e20 = ema(closes,20), e50 = ema(closes,50);
-      ema20Series.setData(candles.map((c,i)=>e20[i]?{time:c.time,value:e20[i]}:null).filter(Boolean));
-      ema50Series.setData(candles.map((c,i)=>e50[i]?{time:c.time,value:e50[i]}:null).filter(Boolean));
-      ribbonSeries.setData(candles.map(c=>({time:c.time,value:(c.high+c.low)/2})));
-      candleSeries.setMarkers(buildMarkers(candles, e20, e50));
-      chart.timeScale().fitContent();
-    }
-
-    // инициализация
-    (async ()=>{
-      await renderTF(DEFAULT_TF);
-    })();
-
-    // TF контрол
-    document.getElementById('tfBar').addEventListener('click', e=>{
-      const b = e.target.closest('.tf');
-      if(b) renderTF(b.dataset.tf);
+    const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+      layout:{background:{color:'#0f141b'},textColor:'#cbd5e1'},
+      rightPriceScale:{visible:true},timeScale:{visible:true},
     });
+    const series = chart.addCandlestickSeries();
+    // държим буфер с последните 200 бара
+    const buffer = [];
+    function onMessage(evt){
+      const msg = JSON.parse(evt.data);
+      if (!msg.k) return;
+      const k = msg.k;
+      const bar = {
+        time: Math.floor(k.t/1000),
+        open: +k.o, high:+k.h, low:+k.l, close:+k.c
+      };
+      if (buffer.length && buffer[buffer.length-1].time===bar.time) {
+        buffer[buffer.length-1] = bar;
+      } else {
+        buffer.push(bar);
+        if (buffer.length>200) buffer.shift();
+      }
+      series.setData(buffer);
+    }
+    // Свързваме се към WS за 3h бара
+    const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_3h");
+    ws.onmessage = onMessage;
   </script>
 </body>
 </html>
