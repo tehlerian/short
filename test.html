@@ -2,7 +2,7 @@
 <html lang="bg">
 <head>
   <meta charset="UTF-8"/>
-  <title>Live BTC/USDT via WS</title>
+  <title>BTC/USDT OHLC + Live WS</title>
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
   <style>
     body{margin:0;background:#0f141b;color:#cbd5e1;font-family:sans-serif}
@@ -17,9 +17,22 @@
       rightPriceScale:{visible:true},timeScale:{visible:true},
     });
     const series = chart.addCandlestickSeries();
-    // държим буфер с последните 200 бара
+    // 1) Зареждаме последните 7 дни hourly данни от CoinGecko
+    fetch('https://api.coingecko.com/api/v3/coins/bitcoin/ohlc?vs_currency=usd&days=7')
+    .then(r=>r.json())
+    .then(data=>{
+      const ohlc = data.map(d=>({
+        time: Math.floor(d[0]/1000),
+        open: d[1], high: d[2], low: d[3], close: d[4]
+      }));
+      series.setData(ohlc);
+      chart.timeScale().fitContent();
+    });
+
+    // 2) После само live 3h обновления през WS
     const buffer = [];
-    function onMessage(evt){
+    const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_3h");
+    ws.onmessage = evt => {
       const msg = JSON.parse(evt.data);
       if (!msg.k) return;
       const k = msg.k;
@@ -27,17 +40,15 @@
         time: Math.floor(k.t/1000),
         open: +k.o, high:+k.h, low:+k.l, close:+k.c
       };
-      if (buffer.length && buffer[buffer.length-1].time===bar.time) {
+      const last = buffer[buffer.length-1];
+      if (last && last.time === bar.time) {
         buffer[buffer.length-1] = bar;
       } else {
         buffer.push(bar);
-        if (buffer.length>200) buffer.shift();
+        if (buffer.length > 200) buffer.shift();
       }
-      series.setData(buffer);
-    }
-    // Свързваме се към WS за 3h бара
-    const ws = new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@kline_3h");
-    ws.onmessage = onMessage;
+      series.update(bar);
+    };
   </script>
 </body>
 </html>
