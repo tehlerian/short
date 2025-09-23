@@ -291,12 +291,14 @@
     }
 
     // --------------- Data ---------------
-    async function fetchKlines(symbol, interval, limit=500) {
-      const url = `${BINANCE_KLINES_URL}?symbol=${symbol}&interval=${interval}&limit=${limit}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Binance error: ${res.status}`);
-      const arr = await res.json();
-      return arr.map(k => ({
+    const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+	
+	async function fetchKlines(symbol, interval, limit = 500) {
+      const target = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      const res = await fetch(CORS_PROXY + encodeURIComponent(target));
+      if (!res.ok) throw new Error(`Proxy error ${res.status}`);
+      const data = await res.json();
+      return data.map(k => ({
         time: Math.floor(k[0] / 1000),
         open: +k[1], high: +k[2], low: +k[3], close: +k[4], volume: +k[5],
       }));
