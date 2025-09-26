@@ -2,185 +2,57 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Binance Realtime Chart</title>
-
-  <!-- Chart.js + Financial plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@3"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-
+  <title>Crypto Scanner MVP</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #111; color: #eee; }
-    #symbolInput { padding: 5px; font-size: 16px; width: 220px; margin-bottom: 15px; }
-    canvas { background: #222; border-radius: 8px; margin-bottom: 20px; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
+    th { background: #f0f0f0; }
   </style>
 </head>
 <body>
-  <h2>📊 Binance Realtime Scanner</h2>
-
-  <!-- search with datalist -->
-  <input id="symbolInput" list="symbols" placeholder="Търси валута...">
-  <datalist id="symbols"></datalist>
-
-  <canvas id="priceChart" width="900" height="400"></canvas>
-  <canvas id="rsiChart" width="900" height="150"></canvas>
+  <h2>Top 100 Cryptos (by % change 24h)</h2>
+  <table id="cryptoTable">
+    <thead>
+      <tr>
+        <th>Symbol</th>
+        <th>Price</th>
+        <th>% Change (24h)</th>
+        <th>Chart</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
-    let ws;
-    let priceChart, rsiChart;
-    let closesTime = [];
-
-    // --- Chart Init ---
-    function initCharts() {
-      if (priceChart) priceChart.destroy();
-      if (rsiChart) rsiChart.destroy();
-
-      const ctx1 = document.getElementById('priceChart').getContext('2d');
-      const ctx2 = document.getElementById('rsiChart').getContext('2d');
-
-      priceChart = new Chart(ctx1, {
-        type: 'candlestick',
-        data: {
-          datasets: [
-            { label: 'Candles', data: [] },
-            { label: 'EMA 20', type: 'line', borderColor: 'yellow', borderWidth: 1.5, data: [], yAxisID: 'y' },
-            { label: 'EMA 50', type: 'line', borderColor: 'cyan', borderWidth: 1.5, data: [], yAxisID: 'y' }
-          ]
-        },
-        options: {
-          scales: {
-            x: { type: 'time', time: { unit: 'minute' }, ticks: { color: '#ccc' } },
-            y: { ticks: { color: '#ccc' } }
-          }
-        }
-      });
-
-      rsiChart = new Chart(ctx2, {
-        type: 'line',
-        data: {
-          datasets: [{ label: 'RSI(14)', borderColor: 'orange', borderWidth: 1.5, data: [] }]
-        },
-        options: {
-          scales: {
-            x: { type: 'time', time: { unit: 'minute' }, ticks: { color: '#ccc' } },
-            y: { min: 0, max: 100, ticks: { color: '#ccc' } }
-          }
-        }
-      });
-    }
-
-    // --- Indicators ---
-    function ema(data, period) {
-      let k = 2 / (period + 1);
-      let emaArray = [];
-      data.forEach((val, i) => {
-        if (i === 0) emaArray.push(val);
-        else emaArray.push(val * k + emaArray[i - 1] * (1 - k));
-      });
-      return emaArray;
-    }
-
-    function computeRSI(closes, period = 14) {
-      let gains = [], losses = [];
-      for (let i = 1; i < closes.length; i++) {
-        let diff = closes[i] - closes[i - 1];
-        gains.push(Math.max(0, diff));
-        losses.push(Math.max(0, -diff));
-      }
-      let avgGain = gains.slice(0, period).reduce((a,b)=>a+b,0)/period;
-      let avgLoss = losses.slice(0, period).reduce((a,b)=>a+b,0)/period;
-      let rsis = [];
-      for (let i = period; i < closes.length; i++) {
-        avgGain = (avgGain * (period - 1) + gains[i]) / period;
-        avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
-        let rs = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
-        rsis.push({ x: new Date(closesTime[i]), y: rs });
-      }
-      return rsis;
-    }
-
-    // --- Load symbols ---
-    async function loadSymbols() {
+    async function loadCryptos() {
       const res = await fetch("https://api.binance.com/api/v3/ticker/24hr");
       const data = await res.json();
-      const sorted = data
-        .filter(s => s.symbol.endsWith("USDT"))
-        .sort((a,b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume))
-        .slice(0, 200);
 
-      const list = document.getElementById("symbols");
-      list.innerHTML = "";
-      sorted.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s.symbol;
-        list.appendChild(opt);
+      // филтрираме само USDT пазари
+      let usdtPairs = data.filter(d => d.symbol.endsWith("USDT"));
+      
+      // сортиране по процентна промяна за 24ч
+      usdtPairs.sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent));
+      
+      // ограничаваме до топ 100
+      usdtPairs = usdtPairs.slice(0, 100);
+
+      const tbody = document.querySelector("#cryptoTable tbody");
+      usdtPairs.forEach(d => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${d.symbol}</td>
+          <td>${parseFloat(d.lastPrice).toFixed(4)}</td>
+          <td style="color:${d.priceChangePercent >= 0 ? 'green' : 'red'}">
+            ${parseFloat(d.priceChangePercent).toFixed(2)}%
+          </td>
+          <td><a href="chart.html?symbol=${d.symbol}">View Chart</a></td>
+        `;
+        tbody.appendChild(row);
       });
-
-      document.getElementById("symbolInput").value = "BTCUSDT";
-      loadChart("BTCUSDT");
-      document.getElementById("symbolInput").addEventListener("change", e => loadChart(e.target.value));
     }
-
-    // --- Load data + ws ---
-    async function loadChart(symbol) {
-      if (ws) ws.close();
-      initCharts();
-
-      const res = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1m&limit=200`);
-      const klines = await res.json();
-      const candles = klines.map(k => ({
-        x: new Date(k[0]),
-        o: +k[1],
-        h: +k[2],
-        l: +k[3],
-        c: +k[4]
-      }));
-
-      priceChart.data.datasets[0].data = candles;
-      closesTime = klines.map(k => k[0]);
-      const closes = klines.map(k => +k[4]);
-
-      // EMA
-      const ema20 = ema(closes, 20).map((v,i) => ({x: new Date(closesTime[i]), y: v}));
-      const ema50 = ema(closes, 50).map((v,i) => ({x: new Date(closesTime[i]), y: v}));
-      priceChart.data.datasets[1].data = ema20;
-      priceChart.data.datasets[2].data = ema50;
-
-      // RSI
-      rsiChart.data.datasets[0].data = computeRSI(closes, 14);
-
-      priceChart.update();
-      rsiChart.update();
-
-      // --- WebSocket update ---
-      const url = `wss://stream.binance.com:9443/ws/${symbol.toLowerCase()}@kline_1m`;
-      ws = new WebSocket(url);
-      ws.onmessage = ev => {
-        const msg = JSON.parse(ev.data);
-        const k = msg.k;
-        if (k.x) { // затворена свещ
-          const newCandle = { x: new Date(k.t), o:+k.o,h:+k.h,l:+k.l,c:+k.c };
-          priceChart.data.datasets[0].data.push(newCandle);
-          if (priceChart.data.datasets[0].data.length > 200) {
-            priceChart.data.datasets[0].data.shift();
-          }
-
-          closes.push(+k.c);
-          closesTime.push(k.t);
-          const ema20 = ema(closes, 20).map((v,i) => ({x: new Date(closesTime[i]), y: v}));
-          const ema50 = ema(closes, 50).map((v,i) => ({x: new Date(closesTime[i]), y: v}));
-          priceChart.data.datasets[1].data = ema20;
-          priceChart.data.datasets[2].data = ema50;
-
-          rsiChart.data.datasets[0].data = computeRSI(closes, 14);
-
-          priceChart.update();
-          rsiChart.update();
-        }
-      };
-    }
-
-    loadSymbols();
+    loadCryptos();
   </script>
 </body>
 </html>
