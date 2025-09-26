@@ -2,57 +2,155 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Crypto Scanner MVP</title>
+  <title>Crypto Chart MVP</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { padding: 8px; border: 1px solid #ddd; text-align: left; }
-    th { background: #f0f0f0; }
+    body { font-family: Arial, sans-serif; }
+    canvas { border: 1px solid #ccc; display: block; margin: 20px auto; }
+    #info { text-align: center; margin-top: 10px; }
   </style>
 </head>
 <body>
-  <h2>Top 100 Cryptos (by % change 24h)</h2>
-  <table id="cryptoTable">
-    <thead>
-      <tr>
-        <th>Symbol</th>
-        <th>Price</th>
-        <th>% Change (24h)</th>
-        <th>Chart</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <h2 style="text-align:center">BTC/USDT Chart (15m)</h2>
+  <canvas id="chart" width="1000" height="500"></canvas>
+  <canvas id="rsiChart" width="1000" height="150"></canvas>
+  <div id="info"></div>
 
   <script>
-    async function loadCryptos() {
-      const res = await fetch("https://api.binance.com/api/v3/ticker/24hr");
-      const data = await res.json();
-
-      // филтрираме само USDT пазари
-      let usdtPairs = data.filter(d => d.symbol.endsWith("USDT"));
-      
-      // сортиране по процентна промяна за 24ч
-      usdtPairs.sort((a, b) => parseFloat(b.priceChangePercent) - parseFloat(a.priceChangePercent));
-      
-      // ограничаваме до топ 100
-      usdtPairs = usdtPairs.slice(0, 100);
-
-      const tbody = document.querySelector("#cryptoTable tbody");
-      usdtPairs.forEach(d => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${d.symbol}</td>
-          <td>${parseFloat(d.lastPrice).toFixed(4)}</td>
-          <td style="color:${d.priceChangePercent >= 0 ? 'green' : 'red'}">
-            ${parseFloat(d.priceChangePercent).toFixed(2)}%
-          </td>
-          <td><a href="chart.html?symbol=${d.symbol}">View Chart</a></td>
-        `;
-        tbody.appendChild(row);
-      });
+    async function getKlines(symbol="BTCUSDT", interval="15m", limit=100) {
+      const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      const res = await fetch(url);
+      return res.json();
     }
-    loadCryptos();
+
+    function ema(values, period) {
+      const k = 2 / (period + 1);
+      let emaArray = [];
+      let prevEma;
+      values.forEach((val, i) => {
+        if (i === 0) {
+          prevEma = val;
+        } else {
+          prevEma = val * k + prevEma * (1 - k);
+        }
+        emaArray.push(prevEma);
+      });
+      return emaArray;
+    }
+
+    function rsi(values, period=14) {
+      let gains = 0, losses = 0;
+      for (let i=1;i<=period;i++) {
+        const diff = values[i] - values[i-1];
+        if (diff >= 0) gains += diff; else losses -= diff;
+      }
+      let avgGain = gains / period;
+      let avgLoss = losses / period;
+      let rs = avgGain / avgLoss;
+      let rsiArray = [100 - 100/(1+rs)];
+      for (let i=period+1; i<values.length; i++) {
+        const diff = values[i] - values[i-1];
+        if (diff >= 0) {
+          avgGain = (avgGain*(period-1) + diff) / period;
+          avgLoss = (avgLoss*(period-1) + 0) / period;
+        } else {
+          avgGain = (avgGain*(period-1) + 0) / period;
+          avgLoss = (avgLoss*(period-1) - diff) / period;
+        }
+        rs = avgLoss === 0 ? 100 : avgGain/avgLoss;
+        rsiArray.push(100 - 100/(1+rs));
+      }
+      return rsiArray;
+    }
+
+    function drawChart(candles, ema20, ema50) {
+      const canvas = document.getElementById("chart");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      const closes = candles.map(c=>c[4]);
+      const highs = candles.map(c=>c[2]);
+      const lows = candles.map(c=>c[3]);
+      const max = Math.max(...highs);
+      const min = Math.min(...lows);
+      const scaleY = canvas.height / (max-min);
+      const candleWidth = canvas.width / candles.length;
+
+      // draw candles
+      candles.forEach((c,i)=>{
+        const x = i*candleWidth + candleWidth/4;
+        const open = c[1], high = c[2], low = c[3], close = c[4];
+        const color = close >= open ? "green" : "red";
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x + candleWidth/4, canvas.height - (high-min)*scaleY);
+        ctx.lineTo(x + candleWidth/4, canvas.height - (low-min)*scaleY);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.fillRect(x, canvas.height - (Math.max(open,close)-min)*scaleY, candleWidth/2, Math.abs(close-open)*scaleY);
+      });
+
+      // draw EMA20
+      ctx.strokeStyle="blue";
+      ctx.beginPath();
+      ema20.forEach((val,i)=>{
+        const x = i*candleWidth + candleWidth/2;
+        const y = canvas.height - (val-min)*scaleY;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+
+      // draw EMA50
+      ctx.strokeStyle="orange";
+      ctx.beginPath();
+      ema50.forEach((val,i)=>{
+        const x = i*candleWidth + candleWidth/2;
+        const y = canvas.height - (val-min)*scaleY;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    }
+
+    function drawRSI(rsiVals) {
+      const canvas = document.getElementById("rsiChart");
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const max = 100, min = 0;
+      const scaleY = canvas.height / (max-min);
+      const stepX = canvas.width / rsiVals.length;
+
+      // 70 / 30 lines
+      ctx.strokeStyle="#999";
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height - 70*scaleY);
+      ctx.lineTo(canvas.width, canvas.height - 70*scaleY);
+      ctx.moveTo(0, canvas.height - 30*scaleY);
+      ctx.lineTo(canvas.width, canvas.height - 30*scaleY);
+      ctx.stroke();
+
+      ctx.strokeStyle="purple";
+      ctx.beginPath();
+      rsiVals.forEach((val,i)=>{
+        const x = i*stepX;
+        const y = canvas.height - val*scaleY;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+    }
+
+    async function main() {
+      const raw = await getKlines("BTCUSDT","15m",120);
+      const candles = raw.map(d => [ +d[0], +d[1], +d[2], +d[3], +d[4] ]); // [time,open,high,low,close]
+      const closes = candles.map(c=>c[4]);
+      const ema20 = ema(closes,20);
+      const ema50 = ema(closes,50);
+      const rsiVals = rsi(closes,14);
+
+      drawChart(candles, ema20, ema50);
+      drawRSI(rsiVals);
+      document.getElementById("info").innerText = "Blue=EMA20, Orange=EMA50, Purple=RSI";
+    }
+
+    main();
   </script>
 </body>
 </html>
