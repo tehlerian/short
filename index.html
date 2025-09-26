@@ -6,21 +6,27 @@
   <title>Crypto Signals - Static</title>
 
   <link rel="stylesheet" href="styles.css" />
-  <!-- Lightweight Charts -->
   <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
   <header>
     <h1>Crypto Signals (static)</h1>
-    <p>Избери валута: започни да пишеш име или символ (autocomplete взима топ-200 от CoinGecko)</p>
+    <p>Избери валута: можеш да избереш от списъка или да започнеш да пишеш име/символ (autocomplete)</p>
   </header>
 
   <main>
     <section id="controls">
       <div class="field">
-        <label for="symbolInput">Монета</label>
+        <label for="symbolSelect">Избери от топ-200</label>
+        <select id="symbolSelect">
+          <option value="">-- зареждане... --</option>
+        </select>
+      </div>
+
+      <div class="field autocomplete-wrap" style="position:relative">
+        <label for="symbolInput">Търси (autocomplete)</label>
         <input id="symbolInput" placeholder="Напиши монета, напр. bitcoin или BTC" autocomplete="off"/>
-        <ul id="suggestions" class="suggestions"></ul>
+        <ul id="suggestions" class="suggestions" role="listbox"></ul>
       </div>
 
       <div class="field">
