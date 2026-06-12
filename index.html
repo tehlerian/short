@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Крипто Сигнален Терминал — Топ 200</title>
+<style>
+:root{
+  --bg:#0b0e14; --bg2:#11151f; --panel:#151a26; --panel2:#1b2230; --line:#232c3d;
+  --txt:#e6edf6; --muted:#8b97ab; --muted2:#5c6677;
+  --buy:#16c784; --buy2:#0e8a5d; --sell:#ea3943; --sell2:#a3242b;
+  --neu:#8b97ab; --accent:#3b82f6; --accent2:#2563eb; --gold:#f0b90b;
+  --up:#16c784; --down:#ea3943;
+  --sb:#0fae73; --ssell:#d11f29;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+  font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  font-size:14px;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:1500px;margin:0 auto;padding:0 18px 60px}
+
+/* Header */
+header{position:sticky;top:0;z-index:40;background:linear-gradient(180deg,#0b0e14 70%,rgba(11,14,20,.92));
+  border-bottom:1px solid var(--line);backdrop-filter:blur(6px)}
+.hd{display:flex;align-items:center;gap:16px;padding:14px 18px;max-width:1500px;margin:0 auto;flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:11px;font-weight:800;font-size:18px;letter-spacing:.2px}
+.logo .dot{width:11px;height:11px;border-radius:50%;background:var(--buy);box-shadow:0 0 12px var(--buy)}
+.logo small{display:block;font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.3px}
+.hd-spacer{flex:1}
+.hd-meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.pill{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 11px;font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.pill b{color:var(--txt)}
+button,.btn{font-family:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);
+  color:var(--txt);border-radius:8px;padding:8px 13px;font-size:13px;font-weight:600;transition:.12s}
+button:hover,.btn:hover{border-color:var(--accent);background:#1d2535}
+.btn-primary{background:var(--accent2);border-color:var(--accent2)}
+.btn-primary:hover{background:var(--accent)}
+.btn.live{border-color:var(--buy2)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--buy);display:inline-block;margin-right:6px;animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+/* Disclaimer */
+.disclaimer{background:linear-gradient(90deg,#2a1a0a,#1a1206);border:1px solid #4a3410;
+  color:#f4d28a;border-radius:10px;padding:11px 15px;margin:16px 0;font-size:12.5px;line-height:1.5;display:flex;gap:10px}
+.disclaimer b{color:var(--gold)}
+.disclaimer .x{margin-left:auto;cursor:pointer;color:#caa45a;font-weight:700}
+
+/* Overview cards */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:16px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.card .lbl{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;font-weight:600}
+.card .val{font-size:23px;font-weight:800;letter-spacing:.3px}
+.card .sub{font-size:12px;color:var(--muted);margin-top:3px}
+.breadth-bar{height:8px;border-radius:6px;overflow:hidden;display:flex;margin-top:9px;background:var(--line)}
+.breadth-bar i{height:100%}
+
+/* Controls */
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 14px}
+.search{flex:1;min-width:200px;position:relative}
+.search input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:9px;
+  padding:10px 12px 10px 36px;color:var(--txt);font-size:13.5px}
+.search input:focus{outline:none;border-color:var(--accent)}
+.search svg{position:absolute;left:11px;top:11px;opacity:.5}
+select{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:10px 12px;color:var(--txt);font-size:13px;font-family:inherit;cursor:pointer}
+.seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:none;border-radius:0;background:transparent;padding:9px 12px;font-size:12.5px;color:var(--muted)}
+.seg button.on{background:var(--accent2);color:#fff}
+
+/* Table */
+.tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{position:sticky;top:69px;background:var(--bg2);z-index:10;text-align:right;padding:11px 12px;
+  font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;
+  border-bottom:1px solid var(--line);cursor:pointer;user-select:none;white-space:nowrap}
+thead th.l{text-align:left}
+thead th:hover{color:var(--txt)}
+thead th .ar{opacity:.4;font-size:9px;margin-left:2px}
+tbody td{padding:10px 12px;text-align:right;border-bottom:1px solid #1a2130;white-space:nowrap}
+tbody tr{cursor:pointer;transition:background .1s}
+tbody tr:hover{background:#172033}
+td.l{text-align:left}
+.coin{display:flex;align-items:center;gap:10px}
+.coin img{width:26px;height:26px;border-radius:50%;background:#222}
+.coin .nm{font-weight:700}
+.coin .sym{color:var(--muted);font-size:11.5px;text-transform:uppercase}
+.rank{color:var(--muted2);font-size:12px;width:30px}
+.chg{font-weight:700}
+.up{color:var(--up)} .down{color:var(--down)}
+.badge{display:inline-block;padding:4px 9px;border-radius:7px;font-size:11.5px;font-weight:800;letter-spacing:.2px;min-width:96px;text-align:center}
+.b-sbuy{background:rgba(15,174,115,.16);color:#27e39a;border:1px solid rgba(15,174,115,.4)}
+.b-buy{background:rgba(22,199,132,.12);color:#16c784;border:1px solid rgba(22,199,132,.3)}
+.b-neu{background:rgba(139,151,171,.12);color:#aab4c4;border:1px solid rgba(139,151,171,.25)}
+.b-sell{background:rgba(234,57,67,.12);color:#ff5e67;border:1px solid rgba(234,57,67,.3)}
+.b-ssell{background:rgba(209,31,41,.18);color:#ff424c;border:1px solid rgba(209,31,41,.45)}
+.scorecell{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.scorebar{width:64px;height:7px;border-radius:5px;background:var(--line);overflow:hidden;position:relative}
+.scorebar i{position:absolute;top:0;height:100%}
+.scoreval{font-weight:800;font-variant-numeric:tabular-nums;width:40px;text-align:right}
+.rsi-chip{font-weight:700;font-variant-numeric:tabular-nums}
+.spark{width:84px;height:30px;vertical-align:middle}
+.conf{font-size:11px;color:var(--muted)}
+.loadrow td{text-align:center;padding:40px;color:var(--muted)}
+.minidata{font-size:10px;color:var(--gold)}
+
+/* Detail modal */
+.overlay{position:fixed;inset:0;background:rgba(4,6,10,.72);backdrop-filter:blur(3px);z-index:90;display:none;align-items:flex-start;justify-content:center;padding:24px;overflow:auto}
+.overlay.on{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--line);border-radius:16px;width:100%;max-width:1080px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.modal-hd{display:flex;align-items:center;gap:14px;padding:18px 22px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.modal-hd img{width:40px;height:40px;border-radius:50%}
+.modal-hd .nm{font-size:19px;font-weight:800}
+.modal-hd .px{font-size:19px;font-weight:800;font-variant-numeric:tabular-nums}
+.modal-hd .close{margin-left:auto;font-size:22px;line-height:1;background:var(--panel2);width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:20px 22px}
+.mgrid{display:grid;grid-template-columns:1.55fr 1fr;gap:20px}
+@media(max-width:880px){.mgrid{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.spark{display:none}}
+.chart-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.chart-card h4{margin:2px 0 8px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;justify-content:space-between}
+canvas.chart{width:100%;display:block}
+.tf-seg{display:flex;gap:4px}
+.tf-seg button{padding:4px 9px;font-size:11px}
+.sig-summary{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.sig-big{font-size:26px;font-weight:900;letter-spacing:.3px;margin:2px 0 4px}
+.gauge{height:10px;border-radius:6px;background:linear-gradient(90deg,var(--sell),#caa45a 50%,var(--buy));position:relative;margin:14px 0 6px}
+.gauge .mk{position:absolute;top:-4px;width:4px;height:18px;background:#fff;border-radius:2px;box-shadow:0 0 6px rgba(0,0,0,.6)}
+.gauge-lbl{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted)}
+.brk{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+.brk td{padding:7px 4px;border-bottom:1px solid #1a2130;text-align:left}
+.brk td:last-child{text-align:right;font-weight:700}
+.brk .ind{color:var(--muted);width:34%}
+.brk .read{color:var(--txt)}
+.subscore{display:inline-block;min-width:38px;text-align:center;padding:2px 6px;border-radius:5px;font-size:11px;font-weight:800}
+.risk{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.risk .b{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 11px}
+.risk .b .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.risk .b .v{font-size:15px;font-weight:800;margin-top:3px;font-variant-numeric:tabular-nums}
+.interp{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.55;margin-top:14px}
+.interp b{color:var(--txt)}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;margin:0 4px 4px 0}
+.tag-w{background:rgba(240,185,11,.13);color:var(--gold);border:1px solid rgba(240,185,11,.3)}
+.tag-g{background:rgba(22,199,132,.12);color:var(--buy);border:1px solid rgba(22,199,132,.3)}
+.tag-r{background:rgba(234,57,67,.12);color:var(--sell);border:1px solid rgba(234,57,67,.3)}
+.foot{margin-top:26px;color:var(--muted2);font-size:11.5px;line-height:1.6;text-align:center}
+.err{background:rgba(234,57,67,.1);border:1px solid rgba(234,57,67,.35);color:#ff8a90;border-radius:10px;padding:12px 15px;margin:14px 0;font-size:13px}
+.keyrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.keyrow input{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 10px;color:var(--txt);font-size:12.5px;width:240px}
+.legend{font-size:11.5px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;margin:4px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+.spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 14px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <div class="logo">
+      <span class="dot"></span>
+      <div>Крипто Сигнален Терминал
+        <small>Технически анализ · Топ 200 · Интрадей режим</small></div>
+    </div>
+    <div class="hd-spacer"></div>
+    <div class="hd-meta">
+      <span class="pill" id="updated">⏱ зареждане…</span>
+      <span class="pill">Източник: <b>CoinGecko</b></span>
+      <label class="pill" style="cursor:pointer"><input type="checkbox" id="autoref" style="margin:0 4px 0 0">Авто (2 мин)</label>
+      <button class="btn live" id="refresh"><span class="live-dot"></span>Обнови</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="disclaimer" id="disc">
+    <span>⚠️</span>
+    <div><b>Честно предупреждение.</b> Нито един технически индикатор не „предвижда“ цената със сигурност — крипто пазарите са силно волатилни и шумни,
+    особено на интрадей хоризонт. Този инструмент изчислява <b>вероятностен сигнал от сливане (confluence)</b> на доказани индикатори (тренд/EMA, MACD, RSI, Bollinger, моментум, обем).
+    Академичните проучвания показват полза основно на 4-часов интервал и слаба до никаква на под-30-минутни. Това е помощно средство за вземане на решение, <b>не</b> финансов съвет. Винаги използвайте stop-loss и управление на риска.
+    <span class="x" onclick="document.getElementById('disc').style.display='none'">скрий ✕</span></div>
+  </div>
+
+  <div class="cards" id="cards">
+    <div class="card"><div class="lbl">Пазарна нагласа</div><div class="val" id="c-breadth">—</div><div class="sub" id="c-breadth-sub">изчисляване…</div>
+      <div class="breadth-bar" id="breadthbar"></div></div>
+    <div class="card"><div class="lbl">Бичи сигнали</div><div class="val up" id="c-bull">—</div><div class="sub">Buy / Strong Buy</div></div>
+    <div class="card"><div class="lbl">Мечи сигнали</div><div class="val down" id="c-bear">—</div><div class="sub">Sell / Strong Sell</div></div>
+    <div class="card"><div class="lbl">Топ възможност ▲</div><div class="val" id="c-topbuy" style="font-size:18px">—</div><div class="sub" id="c-topbuy-sub"></div></div>
+    <div class="card"><div class="lbl">Най-слаб ▼</div><div class="val" id="c-topsell" style="font-size:18px">—</div><div class="sub" id="c-topsell-sub"></div></div>
+  </div>
+
+  <div class="controls">
+    <div class="search">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4-4"/></svg>
+      <input id="q" placeholder="Търси монета (име или символ)…">
+    </div>
+    <div class="seg" id="filt">
+      <button data-f="all" class="on">Всички</button>
+      <button data-f="buy">▲ Покупка</button>
+      <button data-f="neu">Неутрални</button>
+      <button data-f="sell">▼ Продажба</button>
+    </div>
+    <select id="sortsel">
+      <option value="rank">Подреди: Пазарен ранг</option>
+      <option value="score">Подреди: Сила на сигнала</option>
+      <option value="ch1h">Подреди: Промяна 1ч</option>
+      <option value="ch24h">Подреди: Промяна 24ч</option>
+      <option value="rsi">Подреди: RSI</option>
+      <option value="vol">Подреди: Обем</option>
+    </select>
+  </div>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--sb)"></i>Strong Buy ≥55</span>
+    <span><i class="sw" style="background:var(--buy)"></i>Buy 20–55</span>
+    <span><i class="sw" style="background:var(--neu)"></i>Neutral ±20</span>
+    <span><i class="sw" style="background:var(--sell)"></i>Sell −20…−55</span>
+    <span><i class="sw" style="background:var(--ssell)"></i>Strong Sell ≤−55</span>
+    <span class="muted">· Сигналите се изчисляват от 7-дневни часови свещи</span>
+  </div>
+
+  <div id="errbox"></div>
+
+  <div class="tablewrap" style="margin-top:12px">
+    <table>
+      <thead><tr>
+        <th class="l" data-s="rank">#</th>
+        <th class="l" data-s="name">Монета</th>
+        <th data-s="price">Цена</th>
+        <th data-s="ch1h">1ч %</th>
+        <th data-s="ch24h">24ч %</th>
+        <th data-s="ch7d">7д %</th>
+        <th data-s="rsi">RSI</th>
+        <th data-s="score">Сигнал</th>
+        <th data-s="score">Сила</th>
+        <th>7д тренд</th>
+        <th data-s="vol">Обем 24ч</th>
+      </tr></thead>
+      <tbody id="tbody">
+        <tr class="loadrow"><td colspan="11"><div class="spinner"></div>Зареждане на топ 200 криптовалути и изчисляване на сигналите…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="keyrow">
+    <span class="muted" style="font-size:12px">По избор — CoinGecko Demo API ключ (за по-високи лимити, по желание):</span>
+    <input id="apikey" placeholder="x-cg-demo-api-key (по избор)">
+    <button id="savekey">Запази</button>
+  </div>
+
+  <div class="foot">
+    Изчислителен двигател: EMA(9/21/50) · MACD(12,26,9) · RSI(14) · Bollinger(20,2) · мулти-таймфрейм моментум · обем/пазарна капитализация · ATR-базиран риск.<br>
+    Данните се теглят на живо от публичното CoinGecko API директно в браузъра ви. Това не е финансов съвет. Търгувайте отговорно.
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<script>
+/* ============================================================
+   КРИПТО СИГНАЛЕН ТЕРМИНАЛ — изчислителен двигател
+   ============================================================ */
+const API = "https://api.coingecko.com/api/v3";
+let APIKEY = localStorage.getItem("cg_key") || "";
+let RAW = [];           // обработени монети
+let VIEW = [];          // филтрирани/сортирани
+let SORT = {key:"rank", dir:1};
+let FILTER = "all";
+let QUERY = "";
+let autoTimer = null;
+
+/* ---------- Помощни ---------- */
+const $ = s=>document.querySelector(s);
+const fmtPx = v=>{
+  if(v==null||isNaN(v)) return "—";
+  if(v>=1000) return "$"+v.toLocaleString("en-US",{maximumFractionDigits:0});
+  if(v>=1) return "$"+v.toLocaleString("en-US",{maximumFractionDigits:2});
+  if(v>=0.01) return "$"+v.toFixed(4);
+  return "$"+v.toPrecision(3);
+};
+const fmtBig = v=>{
+  if(v==null) return "—";
+  if(v>=1e9) return "$"+(v/1e9).toFixed(2)+"B";
+  if(v>=1e6) return "$"+(v/1e6).toFixed(1)+"M";
+  if(v>=1e3) return "$"+(v/1e3).toFixed(0)+"K";
+  return "$"+v.toFixed(0);
+};
+const pct = v=> v==null||isNaN(v)?"—":(v>=0?"+":"")+v.toFixed(2)+"%";
+const cls = v=> v==null?"":(v>=0?"up":"down");
+
+/* ============================================================
+   ИНДИКАТОРИ (проверени спрямо референтни стойности)
+   ============================================================ */
+function sma(a,p){ if(a.length<p) return null; let s=0; for(let i=a.length-p;i<a.length;i++) s+=a[i]; return s/p; }
+function emaSeries(a,p){
+  if(a.length<p) return [];
+  const k=2/(p+1), out=new Array(a.length).fill(null);
+  let prev=0; for(let i=0;i<p;i++) prev+=a[i]; prev/=p; out[p-1]=prev;
+  for(let i=p;i<a.length;i++){ prev=a[i]*k+prev*(1-k); out[i]=prev; }
+  return out;
+}
+function emaLast(a,p){ const s=emaSeries(a,p); return s.length?s[s.length-1]:null; }
+function rsiSeries(a,p=14){
+  const out=new Array(a.length).fill(null);
+  if(a.length<p+1) return out;
+  let g=0,l=0;
+  for(let i=1;i<=p;i++){ const d=a[i]-a[i-1]; if(d>=0) g+=d; else l-=d; }
+  let ag=g/p, al=l/p;
+  out[p]= al===0?100:100-100/(1+ag/al);
+  for(let i=p+1;i<a.length;i++){ const d=a[i]-a[i-1]; const gg=d>0?d:0, ll=d<0?-d:0;
+    ag=(ag*(p-1)+gg)/p; al=(al*(p-1)+ll)/p; out[i]= al===0?100:100-100/(1+ag/al); }
+  return out;
+}
+function rsiLast(a,p=14){ const s=rsiSeries(a,p); for(let i=s.length-1;i>=0;i--) if(s[i]!=null) return s[i]; return null; }
+function macdCalc(a,fast=12,slow=26,sig=9){
+  if(a.length<slow+sig) return null;
+  const ef=emaSeries(a,fast), es=emaSeries(a,slow);
+  const line=new Array(a.length).fill(null);
+  for(let i=0;i<a.length;i++) if(ef[i]!=null&&es[i]!=null) line[i]=ef[i]-es[i];
+  const valid=line.filter(x=>x!=null);
+  const sigV=emaSeries(valid,sig);
+  const start=line.findIndex(x=>x!=null);
+  const signal=new Array(a.length).fill(null);
+  for(let i=0;i<sigV.length;i++) if(sigV[i]!=null) signal[start+i]=sigV[i];
+  const hist=new Array(a.length).fill(null);
+  for(let i=0;i<a.length;i++) if(line[i]!=null&&signal[i]!=null) hist[i]=line[i]-signal[i];
+  const L=a.length-1;
+  return {macd:line[L], signal:signal[L], hist:hist[L], line, signalLine:signal, histLine:hist};
+}
+function bollinger(a,p=20,m=2){
+  if(a.length<p) return null;
+  const mid=sma(a,p);
+  let v=0; for(let i=a.length-p;i<a.length;i++) v+=Math.pow(a[i]-mid,2); v/=p;
+  const sd=Math.sqrt(v), upper=mid+m*sd, lower=mid-m*sd, price=a[a.length-1];
+  const pctB=(upper-lower)===0?0.5:(price-lower)/(upper-lower);
+  return {mid,upper,lower,pctB,width:mid?(upper-lower)/mid:0,sd};
+}
+function atrFromCloses(a,p=14){ // прокси ATR от часови затваряния
+  if(a.length<p+1) return null;
+  let s=0,n=0;
+  for(let i=a.length-p;i<a.length;i++){ s+=Math.abs(a[i]-a[i-1]); n++; }
+  return n?s/n:null;
+}
+
+/* ============================================================
+   КОМПОЗИТЕН СИГНАЛ (confluence scoring) — интрадей претегляне
+   Всеки под-резултат е в диапазон [-2,+2]; претеглена сума ×50 = [-100,100]
+   ============================================================ */
+function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
+function norm(x,s){ return clamp(2*Math.tanh(x/s),-2,2); }
+
+function computeSignal(c){
+  const closes = (c.sparkline_in_7d && c.sparkline_in_7d.price) ? c.sparkline_in_7d.price.filter(x=>x!=null&&!isNaN(x)) : [];
+  const have = closes.length>=55;          // достатъчно за EMA50/MACD
+  const out = {components:[], flags:[], limited:!have};
+
+  // --- индикатори ---
+  let ema9=null,ema21=null,ema50=null,rsiNow=null,rsiPrev=null,mac=null,bb=null,atr=null;
+  if(closes.length>=9) ema9=emaLast(closes,9);
+  if(closes.length>=21) ema21=emaLast(closes,21);
+  if(closes.length>=50) ema50=emaLast(closes,50);
+  if(closes.length>=15){ const rs=rsiSeries(closes,14); rsiNow=rs[rs.length-1]; rsiPrev=rs[rs.length-2]; }
+  if(closes.length>=35) mac=macdCalc(closes);
+  if(closes.length>=20) bb=bollinger(closes,20,2);
+  atr = atrFromCloses(closes,14);
+
+  // --- под-резултати ---
+  // 1) Тренд (EMA структура) w0.22
+  let trend=0, trendTxt="н/д";
+  if(ema9!=null&&ema21!=null&&ema50!=null){
+    if(ema9>ema21&&ema21>ema50){trend=2;trendTxt="Силен възходящ (9>21>50)";}
+    else if(ema9>ema21){trend=1;trendTxt="Възходящ (9>21)";}
+    else if(ema9<ema21&&ema21<ema50){trend=-2;trendTxt="Силен низходящ (9<21<50)";}
+    else if(ema9<ema21){trend=-1;trendTxt="Низходящ (9<21)";}
+    else {trend=0;trendTxt="Смесен";}
+  } else if(ema9!=null&&ema21!=null){
+    trend = ema9>ema21?1:-1; trendTxt = ema9>ema21?"Възходящ (9>21)":"Низходящ (9<21)";
+  }
+  out.components.push({k:"Тренд (EMA 9/21/50)",read:trendTxt,score:trend,w:0.22});
+
+  // 2) MACD w0.18
+  let macdS=0, macdTxt="н/д";
+  if(mac&&mac.macd!=null&&mac.signal!=null){
+    const above=mac.macd>mac.signal;
+    const hp=mac.histLine[mac.histLine.length-2];
+    const rising=(hp!=null)?mac.hist>hp:mac.hist>0;
+    if(above&&mac.hist>0&&rising){macdS=2;macdTxt="Бичо пресичане, хистограма расте";}
+    else if(above){macdS=1;macdTxt="Над сигналната линия";}
+    else if(!above&&mac.hist<0&&!rising){macdS=-2;macdTxt="Мечо, хистограма пада";}
+    else {macdS=-1;macdTxt="Под сигналната линия";}
+  }
+  out.components.push({k:"MACD (12,26,9)",read:macdTxt,score:macdS,w:0.18});
+
+  // 3) RSI w0.15
+  let rsiS=0, rsiTxt="н/д";
+  if(rsiNow!=null){
+    const rising = rsiPrev!=null ? rsiNow>rsiPrev : true;
+    if(rsiNow>=80){rsiS=-1;rsiTxt="Силно свръхкупен ("+rsiNow.toFixed(0)+") — риск от обрат";out.flags.push({t:"Свръхкупен",c:"r"});}
+    else if(rsiNow>=70){rsiS=rising?0.5:-0.5;rsiTxt="Свръхкупен ("+rsiNow.toFixed(0)+")";out.flags.push({t:"Свръхкупен",c:"w"});}
+    else if(rsiNow>=55){rsiS=rising?2:1;rsiTxt="Бичи моментум ("+rsiNow.toFixed(0)+")";}
+    else if(rsiNow>=45){rsiS=rising?1:-1;rsiTxt="Неутрален ("+rsiNow.toFixed(0)+")";}
+    else if(rsiNow>=30){rsiS=rising?1:-1;rsiTxt="Мечи наклон ("+rsiNow.toFixed(0)+")";}
+    else if(rsiNow>=20){rsiS=rising?1:-0.5;rsiTxt="Свръхпродаден ("+rsiNow.toFixed(0)+") — възможен отскок";out.flags.push({t:"Свръхпродаден",c:"w"});}
+    else {rsiS=rising?1.5:-1;rsiTxt="Силно свръхпродаден ("+rsiNow.toFixed(0)+")";out.flags.push({t:"Свръхпродаден",c:"g"});}
+  }
+  out.components.push({k:"RSI (14)",read:rsiTxt,score:rsiS,w:0.15});
+
+  // 4) Bollinger w0.10
+  let bbS=0, bbTxt="н/д";
+  if(bb){
+    const b=bb.pctB;
+    if(b>1){bbS=0.5;bbTxt="Пробив над горната лента (разтегнат)";}
+    else if(b>=0.8){bbS=1;bbTxt="Близо до горната лента — сила";}
+    else if(b>=0.5){bbS=0.5;bbTxt="Над средната лента";}
+    else if(b>=0.2){bbS=-0.5;bbTxt="Под средната лента";}
+    else if(b>=0){bbS=-1;bbTxt="Близо до долната лента — слабост";}
+    else {bbS=0.5;bbTxt="Под долната лента — възможен отскок";}
+    if(bb.width<0.04){out.flags.push({t:"Свиване (squeeze)",c:"w"}); bbTxt+=" · свиване → възможен пробив";}
+  }
+  out.components.push({k:"Bollinger (20,2) %B",read:bbTxt,score:bbS,w:0.10});
+
+  // 5) Моментум (мулти-таймфрейм, интрадей акцент) w0.30
+  const ch1=c.price_change_percentage_1h_in_currency;
+  const ch24=c.price_change_percentage_24h_in_currency;
+  let mom=0, momTxt="н/д";
+  if(ch1!=null||ch24!=null){
+    const m1 = ch1!=null?norm(ch1,1.5):0;
+    const m24 = ch24!=null?norm(ch24,6):0;
+    mom = clamp(0.65*m1+0.35*m24,-2,2);
+    momTxt = "1ч "+pct(ch1)+" · 24ч "+pct(ch24);
+  }
+  out.components.push({k:"Моментум (1ч/24ч)",read:momTxt,score:mom,w:0.30});
+
+  // 6) Обем-потвърждение w0.05
+  let volS=0, volTxt="н/д";
+  if(c.total_volume&&c.market_cap){
+    const ratio=c.total_volume/c.market_cap;
+    const conv=clamp(ratio/0.12,0,1);
+    const dir = (ch24!=null?Math.sign(ch24):0);
+    volS = dir*conv*2*0.5; // мек насочващ тласък
+    volTxt = "Обем/Капит. "+(ratio*100).toFixed(1)+"% — "+(conv>0.6?"висока активност":conv>0.3?"средна":"ниска");
+  }
+  out.components.push({k:"Обем потвърждение",read:volTxt,score:volS,w:0.05});
+
+  // --- сумиране ---
+  let total=0, wsum=0;
+  out.components.forEach(c2=>{ total+=c2.score*c2.w; wsum+=c2.w; });
+  let score = clamp((total/wsum)*50, -100, 100);
+  if(out.limited){ // при липса на данни — основно моментум
+    score = clamp(((ch1!=null?norm(ch1,1.5):0)*0.6+(ch24!=null?norm(ch24,6):0)*0.4)*50,-100,100);
+  }
+
+  // --- увереност: съгласие между компонентите ---
+  const sgn=Math.sign(score)||1;
+  let agree=0, cnt=0;
+  out.components.forEach(c2=>{ if(c2.score!==0){cnt++; if(Math.sign(c2.score)===sgn) agree++;} });
+  let conf = cnt? Math.round((agree/cnt)*100):40;
+  // обемът добавя увереност
+  if(c.total_volume&&c.market_cap){ const r=c.total_volume/c.market_cap; if(r>0.15) conf=Math.min(100,conf+8); }
+  if(out.limited) conf=Math.min(conf,45);
+
+  // --- сигнал етикет ---
+  let label,key;
+  if(score>=55){label="Strong Buy";key="sbuy";}
+  else if(score>=20){label="Buy";key="buy";}
+  else if(score>-20){label="Neutral";key="neu";}
+  else if(score>-55){label="Sell";key="sell";}
+  else {label="Strong Sell";key="ssell";}
+
+  // --- риск нива (ATR-базирани) ---
+  let risk=null;
+  if(atr&&c.current_price){
+    const e=c.current_price;
+    const long = score>=0;
+    const k=1.5, r1=1, r2=2;
+    if(long){
+      const stop=e-atr*k, dist=e-stop;
+      risk={dir:"Long",entry:e,stop,t1:e+dist*r1,t2:e+dist*r2,atrPct:atr/e*100};
+    } else {
+      const stop=e+atr*k, dist=stop-e;
+      risk={dir:"Short",entry:e,stop,t1:e-dist*r1,t2:e-dist*r2,atrPct:atr/e*100};
+    }
+  }
+
+  return Object.assign(out,{score:Math.round(score),conf,label,key,ema9,ema21,ema50,rsi:rsiNow,macd:mac,bb,atr,risk,closes});
+}
+
+/* ============================================================
+   ТЕГЛЕНЕ НА ДАННИ
+   ============================================================ */
+function headers(){ const h={"accept":"application/json"}; if(APIKEY) h["x-cg-demo-api-key"]=APIKEY; return h; }
+
+async function fetchMarkets(){
+  const url=`${API}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=200&page=1`
+    +`&price_change_percentage=1h,24h,7d,30d&sparkline=true`;
+  const res=await fetch(url,{headers:headers()});
+  if(res.status===429) throw new Error("RATE");
+  if(!res.ok) throw new Error("HTTP "+res.status);
+  return res.json();
+}
+
+async function loadAll(){
+  showError("");
+  try{
+    const data=await fetchMarkets();
+    RAW = data.map(c=>{ const sig=computeSignal(c); return {...c, sig}; });
+    localStorage.setItem("cg_cache", JSON.stringify({t:Date.now(), data}));
+    render();
+    renderCards();
+    stamp(Date.now());
+  }catch(e){
+    const cache=JSON.parse(localStorage.getItem("cg_cache")||"null");
+    if(cache&&cache.data){
+      RAW=cache.data.map(c=>({...c,sig:computeSignal(c)}));
+      render(); renderCards(); stamp(cache.t,true);
+    }
+    if(e.message==="RATE") showError("Достигнат е лимитът на безплатното CoinGecko API (429). Изчакайте ~60 сек и натиснете «Обнови», или добавете безплатен Demo API ключ долу за по-високи лимити."+(RAW.length?" Показани са кеширани данни.":""));
+    else showError("Грешка при теглене на данните: "+e.message+". Проверете интернет връзката си."+(RAW.length?" Показани са кеширани данни.":""));
+  }
+}
+
+function stamp(t,cached){
+  const d=new Date(t);
+  $("#updated").innerHTML = (cached?"📦 кеш · ":"⏱ ")+d.toLocaleTimeString("bg-BG",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+function showError(m){ $("#errbox").innerHTML = m?`<div class="err">${m}</div>`:""; }
+
+/* ============================================================
+   РЕНДИРАНЕ — обзорни карти
+   ============================================================ */
+function renderCards(){
+  const bull=RAW.filter(c=>c.sig.score>=20).length;
+  const bear=RAW.filter(c=>c.sig.score<=-20).length;
+  const neu=RAW.length-bull-bear;
+  $("#c-bull").textContent=bull;
+  $("#c-bear").textContent=bear;
+  const sentiment = bull>bear*1.3?"Бича":bear>bull*1.3?"Меча":"Смесена";
+  $("#c-breadth").textContent=sentiment;
+  $("#c-breadth").className="val "+(sentiment==="Бича"?"up":sentiment==="Меча"?"down":"");
+  $("#c-breadth-sub").textContent=`${bull} бичи · ${neu} неутр. · ${bear} мечи`;
+  const tot=RAW.length||1;
+  $("#breadthbar").innerHTML=
+    `<i style="width:${bull/tot*100}%;background:var(--buy)"></i>`+
+    `<i style="width:${neu/tot*100}%;background:var(--neu)"></i>`+
+    `<i style="width:${bear/tot*100}%;background:var(--sell)"></i>`;
+  const sorted=[...RAW].sort((a,b)=>b.sig.score-a.sig.score);
+  const top=sorted[0], bot=sorted[sorted.length-1];
+  if(top){$("#c-topbuy").textContent=top.symbol.toUpperCase();
+    $("#c-topbuy-sub").innerHTML=`<span class="up">${top.sig.label} · ${top.sig.score}</span>`;}
+  if(bot){$("#c-topsell").textContent=bot.symbol.toUpperCase();
+    $("#c-topsell-sub").innerHTML=`<span class="down">${bot.sig.label} · ${bot.sig.score}</span>`;}
+}
+
+/* ============================================================
+   РЕНДИРАНЕ — таблица
+   ============================================================ */
+const KEYMAP={rank:c=>c.market_cap_rank,name:c=>c.name.toLowerCase(),price:c=>c.current_price,
+  ch1h:c=>c.price_change_percentage_1h_in_currency??-999,
+  ch24h:c=>c.price_change_percentage_24h_in_currency??-999,
+  ch7d:c=>c.price_change_percentage_7d_in_currency??-999,
+  rsi:c=>c.sig.rsi??-1, score:c=>c.sig.score, vol:c=>c.total_volume??0};
+
+function applyView(){
+  let v=[...RAW];
+  if(QUERY){ const q=QUERY.toLowerCase(); v=v.filter(c=>c.name.toLowerCase().includes(q)||c.symbol.toLowerCase().includes(q)); }
+  if(FILTER==="buy") v=v.filter(c=>c.sig.score>=20);
+  else if(FILTER==="sell") v=v.filter(c=>c.sig.score<=-20);
+  else if(FILTER==="neu") v=v.filter(c=>c.sig.score>-20&&c.sig.score<20);
+  const f=KEYMAP[SORT.key]||KEYMAP.rank;
+  v.sort((a,b)=>{ const x=f(a),y=f(b); return (x<y?-1:x>y?1:0)*SORT.dir; });
+  VIEW=v;
+}
+
+function scoreColor(s){ return s>=20?"var(--buy)":s<=-20?"var(--sell)":"var(--neu)"; }
+
+function render(){
+  applyView();
+  const tb=$("#tbody");
+  if(!VIEW.length){ tb.innerHTML=`<tr class="loadrow"><td colspan="11">Няма съвпадащи монети.</td></tr>`; return; }
+  let html="";
+  VIEW.forEach((c,i)=>{
+    const s=c.sig;
+    const sp=sparkSVG(s.closes, s.score>=0);
+    const sw=Math.abs(s.score)/2;
+    const barFill = s.score>=0
+      ? `<i style="left:50%;width:${sw}%;background:var(--buy)"></i>`
+      : `<i style="right:50%;width:${sw}%;background:var(--sell)"></i>`;
+    const rsiv=s.rsi;
+    const rsiColor = rsiv==null?"var(--muted)":rsiv>=70?"var(--sell)":rsiv<=30?"var(--buy)":"var(--txt)";
+    html+=`<tr data-id="${c.id}">
+      <td class="l rank">${c.market_cap_rank??i+1}</td>
+      <td class="l"><div class="coin"><img loading="lazy" src="${c.image}" onerror="this.style.visibility='hidden'">
+        <div><div class="nm">${c.name}${s.limited?' <span class="minidata" title="Ограничени данни">◔</span>':''}</div>
+        <div class="sym">${c.symbol}</div></div></div></td>
+      <td>${fmtPx(c.current_price)}</td>
+      <td class="chg ${cls(c.price_change_percentage_1h_in_currency)}">${pct(c.price_change_percentage_1h_in_currency)}</td>
+      <td class="chg ${cls(c.price_change_percentage_24h_in_currency)}">${pct(c.price_change_percentage_24h_in_currency)}</td>
+      <td class="chg ${cls(c.price_change_percentage_7d_in_currency)}">${pct(c.price_change_percentage_7d_in_currency)}</td>
+      <td><span class="rsi-chip" style="color:${rsiColor}">${rsiv==null?"—":rsiv.toFixed(0)}</span></td>
+      <td style="text-align:right"><span class="badge b-${s.key}">${s.label}</span></td>
+      <td><div class="scorecell"><div class="scorebar">${barFill}</div>
+        <span class="scoreval" style="color:${scoreColor(s.score)}">${s.score>0?"+":""}${s.score}</span></div>
+        <div class="conf" style="text-align:right">увер. ${s.conf}%</div></td>
+      <td>${sp}</td>
+      <td>${fmtBig(c.total_volume)}</td>
+    </tr>`;
+  });
+  tb.innerHTML=html;
+  tb.querySelectorAll("tr[data-id]").forEach(tr=>tr.onclick=()=>openDetail(tr.dataset.id));
+}
+
+/* ---- мини спарклайн SVG ---- */
+function sparkSVG(closes, up){
+  if(!closes||closes.length<2) return `<span class="muted">—</span>`;
+  const w=84,h=30,n=closes.length;
+  let mn=Math.min(...closes), mx=Math.max(...closes); if(mn===mx) mx=mn+1;
+  const pts=closes.map((v,i)=>`${(i/(n-1)*w).toFixed(1)},${(h-((v-mn)/(mx-mn))*h).toFixed(1)}`).join(" ");
+  const col=up?"#16c784":"#ea3943";
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.5"/></svg>`;
+}
+
+/* ============================================================
+   ДЕТАЙЛЕН ИЗГЛЕД
+   ============================================================ */
+let detailState={id:null,days:1};
+async function openDetail(id){
+  const c=RAW.find(x=>x.id===id); if(!c) return;
+  detailState={id,days:1};
+  $("#overlay").classList.add("on");
+  document.body.style.overflow="hidden";
+  renderDetailShell(c);
+  loadOHLC(c,1);
+}
+function closeDetail(){ $("#overlay").classList.remove("on"); document.body.style.overflow=""; }
+$("#overlay").addEventListener("click",e=>{ if(e.target.id==="overlay") closeDetail(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDetail(); });
+
+function subBadge(v){
+  const col=v>0.3?"var(--buy)":v<-0.3?"var(--sell)":"var(--neu)";
+  const bg=v>0.3?"rgba(22,199,132,.15)":v<-0.3?"rgba(234,57,67,.15)":"rgba(139,151,171,.15)";
+  return `<span class="subscore" style="color:${col};background:${bg}">${v>0?"+":""}${v.toFixed(1)}</span>`;
+}
+
+function renderDetailShell(c){
+  const s=c.sig;
+  const markerPos=(s.score+100)/2; // 0..100
+  const flags=s.flags.map(f=>`<span class="tag tag-${f.c}">${f.t}</span>`).join("");
+  const rows=s.components.map(cp=>`<tr><td class="ind">${cp.k}</td><td class="read">${cp.read}</td><td>${subBadge(cp.score)}</td></tr>`).join("");
+  let riskHtml="";
+  if(s.risk){
+    const r=s.risk;
+    riskHtml=`<div style="margin-top:14px"><h4 style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:0 0 6px">Примерен план (${r.dir}) · ATR ${r.atrPct.toFixed(2)}%</h4>
+    <div class="risk">
+      <div class="b"><div class="l">Вход</div><div class="v">${fmtPx(r.entry)}</div></div>
+      <div class="b"><div class="l">Stop-loss</div><div class="v down">${fmtPx(r.stop)}</div></div>
+      <div class="b"><div class="l">Цел 1 / 2</div><div class="v up">${fmtPx(r.t1)} <span class="muted">/</span> ${fmtPx(r.t2)}</div></div>
+    </div>
+    <div class="muted" style="font-size:11px;margin-top:6px">Нивата са ATR-базирани (1.5× stop, 1R/2R цели). Адаптирайте към вашия риск. Това не е препоръка за сделка.</div></div>`;
+  }
+  $("#modal").innerHTML=`
+  <div class="modal-hd">
+    <img src="${c.image}" onerror="this.style.visibility='hidden'">
+    <div><div class="nm">${c.name} <span class="sym muted" style="font-size:13px">${c.symbol.toUpperCase()}</span></div>
+      <div class="muted" style="font-size:12px">Ранг #${c.market_cap_rank} · Кап. ${fmtBig(c.market_cap)}</div></div>
+    <div style="text-align:right"><div class="px">${fmtPx(c.current_price)}</div>
+      <div class="chg ${cls(c.price_change_percentage_24h_in_currency)}" style="font-size:13px">${pct(c.price_change_percentage_24h_in_currency)} (24ч)</div></div>
+    <div class="close" onclick="closeDetail()">✕</div>
+  </div>
+  <div class="modal-body">
+    <div class="sig-summary">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.4px">Композитен сигнал · интрадей</div>
+          <div class="sig-big" style="color:${scoreColor(s.score)}">${s.label}</div>
+          <div>${flags||'<span class="muted" style="font-size:12px">няма специални флагове</span>'}</div></div>
+        <div style="text-align:right"><div class="muted" style="font-size:11px">Резултат</div>
+          <div style="font-size:30px;font-weight:900;color:${scoreColor(s.score)}">${s.score>0?"+":""}${s.score}</div>
+          <div class="muted" style="font-size:12px">увереност ${s.conf}%${s.limited?' · ограничени данни':''}</div></div>
+      </div>
+      <div class="gauge"><div class="mk" style="left:calc(${markerPos}% - 2px)"></div></div>
+      <div class="gauge-lbl"><span>−100 Strong Sell</span><span>0</span><span>Strong Buy +100</span></div>
+    </div>
+
+    <div class="mgrid">
+      <div>
+        <div class="chart-card">
+          <h4>Ценова графика + EMA9/21/50 · Bollinger
+            <span class="tf-seg seg" id="tfseg">
+              <button data-d="1" class="on">1д · 30м</button>
+              <button data-d="7">7д · 4ч</button>
+              <button data-d="30">30д</button>
+            </span></h4>
+          <canvas class="chart" id="priceChart" height="300"></canvas>
+        </div>
+        <div class="chart-card" style="margin-top:12px"><h4>RSI (14)</h4><canvas class="chart" id="rsiChart" height="110"></canvas></div>
+        <div class="chart-card" style="margin-top:12px"><h4>MACD (12,26,9)</h4><canvas class="chart" id="macdChart" height="120"></canvas></div>
+      </div>
+      <div>
+        <div class="chart-card"><h4>Разбивка на сигнала</h4>
+          <table class="brk"><tbody>${rows}</tbody></table>
+        </div>
+        ${riskHtml}
+        <div class="interp" id="interp">${interpretation(c,s)}</div>
+      </div>
+    </div>
+  </div>`;
+  $("#tfseg").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    $("#tfseg").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on"); loadOHLC(c, +b.dataset.d);
+  });
+}
+
+function interpretation(c,s){
+  const dir = s.score>=20?"бичи":s.score<=-20?"мечи":"неутрален/смесен";
+  const parts=[];
+  parts.push(`<b>${c.name}</b> показва <b>${dir}</b> технически профил с резултат <b style="color:${scoreColor(s.score)}">${s.score>0?"+":""}${s.score}</b> и увереност ${s.conf}%.`);
+  const tr=s.components[0];
+  if(tr.score>=1) parts.push(`Трендът е възходящ — краткосрочните EMA са над дългосрочните, което подкрепя покупки при отскоци.`);
+  else if(tr.score<=-1) parts.push(`Трендът е низходящ — EMA структурата фаворизира продажби/изчакване.`);
+  if(s.rsi!=null){
+    if(s.rsi>=70) parts.push(`RSI ${s.rsi.toFixed(0)} е в свръхкупена зона — повишен риск от краткосрочен обрат; внимавайте с гонене на цената.`);
+    else if(s.rsi<=30) parts.push(`RSI ${s.rsi.toFixed(0)} е свръхпродаден — възможен е технически отскок, но само тренд-потвърдено.`);
+    else parts.push(`RSI ${s.rsi.toFixed(0)} е в неутрална зона.`);
+  }
+  if(s.bb&&s.bb.width<0.04) parts.push(`Bollinger лентите се свиват — често предхожда рязко движение (пробив); изчакайте посоката.`);
+  parts.push(`<span class="muted">Интрадей сигналите се променят бързо — преоценявайте често и винаги ползвайте stop-loss. Това е технически изглед, не финансов съвет.</span>`);
+  return parts.join(" ");
+}
+
+/* ---- теглене на OHLC за детайла ---- */
+async function loadOHLC(c,days){
+  detailState.days=days;
+  const pc=$("#priceChart"); if(!pc) return;
+  const ctx=pc.getContext("2d"); ctx.clearRect(0,0,pc.width,pc.height);
+  ctx.fillStyle="#8b97ab"; ctx.font="13px Inter,sans-serif"; ctx.textAlign="center";
+  ctx.fillText("Зареждане на графиката…", pc.width/2, pc.height/2);
+  try{
+    const url=`${API}/coins/${c.id}/ohlc?vs_currency=usd&days=${days}`;
+    const res=await fetch(url,{headers:headers()});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const raw=await res.json();
+    const candles=raw.map(r=>({t:r[0],o:r[1],h:r[2],l:r[3],c:r[4]}));
+    if(detailState.id!==c.id) return; // потребителят е затворил/сменил
+    drawCharts(candles);
+  }catch(e){
+    if(detailState.id!==c.id) return;
+    // резервен вариант: ползвай 7-дневния sparkline като линия
+    const closes=c.sig.closes;
+    if(closes&&closes.length){
+      const candles=closes.map((cl,i)=>({t:i,o:cl,h:cl,l:cl,c:cl}));
+      drawCharts(candles,true);
+      const pc2=$("#priceChart"); if(pc2){ const cx=pc2.getContext("2d"); cx.fillStyle="#f0b90b"; cx.font="11px Inter"; cx.textAlign="left"; cx.fillText("OHLC недостъпен (лимит) — показан 7д часови ред",8,14); }
+    } else {
+      ctx.clearRect(0,0,pc.width,pc.height); ctx.fillStyle="#ff8a90"; ctx.fillText("Графиката е недостъпна (API лимит). Опитайте по-късно.",pc.width/2,pc.height/2);
+    }
+  }
+}
+
+/* ============================================================
+   CANVAS ГРАФИКИ
+   ============================================================ */
+function setupCanvas(cv){
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth||cv.parentElement.clientWidth-24;
+  const h=parseInt(cv.getAttribute("height"));
+  cv.width=w*dpr; cv.height=h*dpr;
+  const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx,w,h};
+}
+function niceRange(min,max){ const pad=(max-min)*0.08||max*0.02||1; return [min-pad,max+pad]; }
+
+function drawCharts(candles, lineMode){
+  const closes=candles.map(c=>c.c);
+  drawPrice(candles, lineMode);
+  drawRSI(closes);
+  drawMACD(closes);
+}
+
+function drawPrice(candles, lineMode){
+  const cv=$("#priceChart"); if(!cv) return;
+  const {ctx,w,h}=setupCanvas(cv);
+  ctx.clearRect(0,0,w,h);
+  const closes=candles.map(c=>c.c);
+  const padR=58,padL=8,padT=10,padB=18;
+  const plotW=w-padR-padL, plotH=h-padT-padB;
+  let lo=Math.min(...candles.map(c=>c.l)), hi=Math.max(...candles.map(c=>c.h));
+  // Bollinger + EMA overlays
+  const ema9=emaSeries(closes,9), ema21=emaSeries(closes,21), ema50=emaSeries(closes,50);
+  const bbU=[],bbL=[],bbM=[];
+  for(let i=0;i<closes.length;i++){
+    if(i>=19){ const bb=bollinger(closes.slice(0,i+1),20,2); bbU[i]=bb.upper;bbL[i]=bb.lower;bbM[i]=bb.mid; if(bb.upper>hi)hi=bb.upper; if(bb.lower<lo)lo=bb.lower; }
+  }
+  [lo,hi]=niceRange(lo,hi);
+  const x=i=>padL+(candles.length<=1?plotW/2:(i/(candles.length-1))*plotW);
+  const y=v=>padT+plotH-((v-lo)/(hi-lo))*plotH;
+  // grid + axis
+  ctx.strokeStyle="#1c2433"; ctx.fillStyle="#5c6677"; ctx.font="10px Inter,sans-serif"; ctx.textAlign="left"; ctx.lineWidth=1;
+  for(let g=0;g<=4;g++){ const vy=padT+(plotH/4)*g; const val=hi-((hi-lo)/4)*g;
+    ctx.beginPath(); ctx.moveTo(padL,vy); ctx.lineTo(padL+plotW,vy); ctx.stroke();
+    ctx.fillText(fmtPx(val).replace("$",""), padL+plotW+5, vy+3); }
+  // Bollinger band fill
+  ctx.beginPath();
+  let started=false;
+  for(let i=0;i<closes.length;i++){ if(bbU[i]==null) continue; if(!started){ctx.moveTo(x(i),y(bbU[i]));started=true;} else ctx.lineTo(x(i),y(bbU[i])); }
+  for(let i=closes.length-1;i>=0;i--){ if(bbL[i]==null) continue; ctx.lineTo(x(i),y(bbL[i])); }
+  ctx.closePath(); ctx.fillStyle="rgba(59,130,246,.07)"; ctx.fill();
+  // candles or line
+  if(lineMode){
+    ctx.beginPath(); closes.forEach((c,i)=>{ i?ctx.lineTo(x(i),y(c)):ctx.moveTo(x(i),y(c)); });
+    ctx.strokeStyle="#3b82f6"; ctx.lineWidth=1.6; ctx.stroke();
+  } else {
+    const cw=Math.max(1.5,Math.min(9,plotW/candles.length*0.62));
+    candles.forEach((c,i)=>{ const up=c.c>=c.o; ctx.strokeStyle=up?"#16c784":"#ea3943"; ctx.fillStyle=up?"#16c784":"#ea3943";
+      ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x(i),y(c.h)); ctx.lineTo(x(i),y(c.l)); ctx.stroke();
+      const yo=y(c.o),yc=y(c.c); ctx.fillRect(x(i)-cw/2, Math.min(yo,yc), cw, Math.max(1,Math.abs(yc-yo))); });
+  }
+  // EMA lines
+  function line(arr,col,wd){ ctx.beginPath(); let st=false; for(let i=0;i<arr.length;i++){ if(arr[i]==null) continue; if(!st){ctx.moveTo(x(i),y(arr[i]));st=true;} else ctx.lineTo(x(i),y(arr[i])); } ctx.strokeStyle=col; ctx.lineWidth=wd; ctx.stroke(); }
+  line(bbM,"rgba(139,151,171,.5)",1);
+  line(ema9,"#f0b90b",1.3); line(ema21,"#3b82f6",1.3); line(ema50,"#b07cff",1.3);
+  // legend
+  ctx.font="10px Inter,sans-serif"; ctx.textAlign="left";
+  ctx.fillStyle="#f0b90b"; ctx.fillText("EMA9",padL+2,padT+10);
+  ctx.fillStyle="#3b82f6"; ctx.fillText("EMA21",padL+40,padT+10);
+  ctx.fillStyle="#b07cff"; ctx.fillText("EMA50",padL+84,padT+10);
+}
+
+function drawRSI(closes){
+  const cv=$("#rsiChart"); if(!cv) return;
+  const {ctx,w,h}=setupCanvas(cv); ctx.clearRect(0,0,w,h);
+  const rs=rsiSeries(closes,14);
+  const padR=30,padL=8,padT=6,padB=6, plotW=w-padR-padL, plotH=h-padT-padB;
+  const x=i=>padL+(closes.length<=1?0:(i/(closes.length-1))*plotW);
+  const y=v=>padT+plotH-(v/100)*plotH;
+  ctx.strokeStyle="#1c2433"; ctx.fillStyle="#5c6677"; ctx.font="9px Inter,sans-serif"; ctx.textAlign="left";
+  [30,50,70].forEach(lv=>{ ctx.strokeStyle=lv===50?"#1c2433":"#243049"; ctx.setLineDash(lv===50?[]:[3,3]);
+    ctx.beginPath(); ctx.moveTo(padL,y(lv)); ctx.lineTo(padL+plotW,y(lv)); ctx.stroke(); ctx.fillText(lv,padL+plotW+4,y(lv)+3); });
+  ctx.setLineDash([]);
+  // overbought/oversold fills
+  ctx.fillStyle="rgba(234,57,67,.06)"; ctx.fillRect(padL,padT,plotW,y(70)-padT);
+  ctx.fillStyle="rgba(22,199,132,.06)"; ctx.fillRect(padL,y(30),plotW,padT+plotH-y(30));
+  ctx.beginPath(); let st=false;
+  for(let i=0;i<rs.length;i++){ if(rs[i]==null) continue; if(!st){ctx.moveTo(x(i),y(rs[i]));st=true;} else ctx.lineTo(x(i),y(rs[i])); }
+  ctx.strokeStyle="#a855f7"; ctx.lineWidth=1.5; ctx.stroke();
+  const last=rs.filter(v=>v!=null).pop();
+  if(last!=null){ ctx.fillStyle=last>=70?"#ea3943":last<=30?"#16c784":"#a855f7"; ctx.textAlign="left"; ctx.font="11px Inter,sans-serif"; ctx.fillText(last.toFixed(0),padL+plotW+4,y(50)-2); }
+}
+
+function drawMACD(closes){
+  const cv=$("#macdChart"); if(!cv) return;
+  const {ctx,w,h}=setupCanvas(cv); ctx.clearRect(0,0,w,h);
+  const m=macdCalc(closes); if(!m){ ctx.fillStyle="#5c6677"; ctx.font="11px Inter"; ctx.textAlign="center"; ctx.fillText("Недостатъчно данни за MACD",w/2,h/2); return; }
+  const padR=30,padL=8,padT=6,padB=6, plotW=w-padR-padL, plotH=h-padT-padB;
+  const vals=[...m.line,...m.signalLine,...m.histLine].filter(v=>v!=null);
+  let mx=Math.max(...vals.map(Math.abs))||1;
+  const x=i=>padL+(closes.length<=1?0:(i/(closes.length-1))*plotW);
+  const y=v=>padT+plotH/2-(v/mx)*(plotH/2*0.92);
+  ctx.strokeStyle="#1c2433"; ctx.beginPath(); ctx.moveTo(padL,y(0)); ctx.lineTo(padL+plotW,y(0)); ctx.stroke();
+  // histogram
+  const bw=Math.max(1,plotW/closes.length*0.7);
+  for(let i=0;i<m.histLine.length;i++){ const v=m.histLine[i]; if(v==null) continue;
+    ctx.fillStyle=v>=0?"rgba(22,199,132,.55)":"rgba(234,57,67,.55)";
+    ctx.fillRect(x(i)-bw/2, Math.min(y(0),y(v)), bw, Math.max(1,Math.abs(y(v)-y(0)))); }
+  function line(arr,col){ ctx.beginPath(); let st=false; for(let i=0;i<arr.length;i++){ if(arr[i]==null) continue; if(!st){ctx.moveTo(x(i),y(arr[i]));st=true;} else ctx.lineTo(x(i),y(arr[i])); } ctx.strokeStyle=col; ctx.lineWidth=1.4; ctx.stroke(); }
+  line(m.line,"#3b82f6"); line(m.signalLine,"#f0b90b");
+  ctx.font="9px Inter,sans-serif"; ctx.textAlign="left";
+  ctx.fillStyle="#3b82f6"; ctx.fillText("MACD",padL+2,padT+9); ctx.fillStyle="#f0b90b"; ctx.fillText("Signal",padL+44,padT+9);
+}
+
+/* ============================================================
+   СЪБИТИЯ
+   ============================================================ */
+$("#q").addEventListener("input",e=>{ QUERY=e.target.value.trim(); render(); });
+$("#filt").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  $("#filt").querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); FILTER=b.dataset.f; render();
+});
+$("#sortsel").addEventListener("change",e=>{
+  SORT.key=e.target.value; SORT.dir = (e.target.value==="rank"||e.target.value==="name")?1:-1; render();
+});
+document.querySelectorAll("thead th[data-s]").forEach(th=>th.onclick=()=>{
+  const k=th.dataset.s; if(SORT.key===k) SORT.dir*=-1; else {SORT.key=k; SORT.dir=(k==="rank"||k==="name")?1:-1;} render();
+});
+$("#refresh").onclick=loadAll;
+$("#savekey").onclick=()=>{ APIKEY=$("#apikey").value.trim(); localStorage.setItem("cg_key",APIKEY); showError(APIKEY?"":""); loadAll(); };
+$("#apikey").value=APIKEY;
+$("#autoref").addEventListener("change",e=>{
+  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
+  if(e.target.checked) autoTimer=setInterval(loadAll,120000);
+});
+window.addEventListener("resize",()=>{ if(detailState.id && $("#overlay").classList.contains("on")){ const c=RAW.find(x=>x.id===detailState.id); if(c&&c.sig.closes){ /* прерисуване при наличие */ } } });
+
+/* старт */
+loadAll();
+</script>
+</body>
+</html>
