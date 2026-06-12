@@ -68,9 +68,9 @@ select{background:var(--panel);border:1px solid var(--line);border-radius:9px;pa
 .seg button.on{background:var(--accent2);color:#fff}
 
 /* Table */
-.tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tablewrap{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;overflow:clip}
 table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{position:sticky;top:69px;background:var(--bg2);z-index:10;text-align:right;padding:11px 12px;
+thead th{position:sticky;top:var(--hdr-h,60px);background:var(--bg2);z-index:10;text-align:right;padding:11px 12px;
   font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;
   border-bottom:1px solid var(--line);cursor:pointer;user-select:none;white-space:nowrap}
 thead th.l{text-align:left}
@@ -114,7 +114,7 @@ td.l{text-align:left}
 .modal-hd .close{margin-left:auto;font-size:22px;line-height:1;background:var(--panel2);width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center}
 .modal-body{padding:20px 22px}
 .mgrid{display:grid;grid-template-columns:1.55fr 1fr;gap:20px}
-@media(max-width:880px){.mgrid{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.spark{display:none}}
+@media(max-width:880px){.mgrid{grid-template-columns:1fr}}
 .chart-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
 .chart-card h4{margin:2px 0 8px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;justify-content:space-between}
 canvas.chart{width:100%;display:block}
@@ -151,6 +151,56 @@ canvas.chart{width:100%;display:block}
 .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 14px}
 @keyframes sp{to{transform:rotate(360deg)}}
 .muted{color:var(--muted)}
+
+/* ============ RESPONSIVE (мобилни устройства) ============ */
+/* Колони: 1=# 2=Монета 3=Цена 4=1ч 5=24ч 6=7д 7=RSI 8=Сигнал 9=Сила 10=Тренд 11=Обем */
+@media(max-width:1024px){
+  th:nth-child(10),td:nth-child(10){display:none} /* 7д тренд спарклайн */
+}
+@media(max-width:768px){
+  html,body{font-size:13px}
+  .wrap{padding:0 10px 40px}
+  .hd{padding:10px 12px;gap:10px}
+  .logo{font-size:16px}
+  .hd-meta{gap:8px;font-size:11px;width:100%}
+  .hd-meta .pill{padding:4px 9px;font-size:11px}
+  button,.btn{padding:7px 11px;font-size:12px}
+  /* таблицата става хоризонтално скролируема, лентата с колоните залепва в контейнера */
+  .tablewrap{overflow:auto hidden;-webkit-overflow-scrolling:touch}
+  table{min-width:660px}
+  thead th{top:0}
+  th:nth-child(6),td:nth-child(6){display:none}  /* 7д % */
+  th:nth-child(11),td:nth-child(11){display:none} /* Обем 24ч */
+  tbody td,thead th{padding:9px 8px}
+  .badge{min-width:76px;font-size:10.5px;padding:3px 6px}
+  .scorebar{width:42px}
+  .conf{font-size:10px}
+  .controls{gap:8px}
+  .search{min-width:100%}
+  .seg{flex:1}
+  .seg button{flex:1;padding:8px 4px;font-size:11.5px}
+  select{flex:1;min-width:0}
+  .legend{gap:8px;font-size:10.5px}
+  .overlay{padding:8px}
+  .modal-hd{padding:12px 14px;gap:10px}
+  .modal-hd .nm{font-size:16px}
+  .modal-hd .px{font-size:16px}
+  .modal-body{padding:12px 14px}
+  .risk{grid-template-columns:1fr 1fr}
+  .keyrow input{flex:1;width:auto;min-width:0}
+  .sig-big{font-size:21px}
+}
+@media(max-width:480px){
+  .cards{grid-template-columns:1fr 1fr;gap:8px}
+  .card{padding:10px 12px}
+  .card .val{font-size:18px}
+  th:nth-child(1),td:nth-child(1){display:none} /* # ранг */
+  table{min-width:560px}
+  .coin img{width:22px;height:22px}
+  .coin{gap:7px}
+  .risk{grid-template-columns:1fr}
+  .gauge-lbl span{font-size:9.5px}
+}
 </style>
 </head>
 <body>
@@ -249,7 +299,7 @@ canvas.chart{width:100%;display:block}
   </div>
 
   <div class="foot">
-    Изчислителен двигател: EMA(9/21/50) · MACD(12,26,9) · RSI(14) · Bollinger(20,2) · мулти-таймфрейм моментум · обем/пазарна капитализация · ATR-базиран риск.<br>
+    Изчислителен двигател: EMA(9/21/50) + детекция на нови пресичания · MACD(12,26,9) · RSI(14) + дивергенции · Bollinger(20,2) · мулти-таймфрейм моментум · обем/пазарна капитализация · ATR-базиран риск · защита от преразтегнати движения.<br>
     Данните се теглят на живо от публичното CoinGecko API директно в браузъра ви. Това не е финансов съвет. Търгувайте отговорно.
   </div>
 </div>
@@ -314,7 +364,6 @@ function rsiSeries(a,p=14){
     ag=(ag*(p-1)+gg)/p; al=(al*(p-1)+ll)/p; out[i]= al===0?100:100-100/(1+ag/al); }
   return out;
 }
-function rsiLast(a,p=14){ const s=rsiSeries(a,p); for(let i=s.length-1;i>=0;i--) if(s[i]!=null) return s[i]; return null; }
 function macdCalc(a,fast=12,slow=26,sig=9){
   if(a.length<slow+sig) return null;
   const ef=emaSeries(a,fast), es=emaSeries(a,slow);
@@ -352,6 +401,27 @@ function atrFromCloses(a,p=14){ // прокси ATR от часови затва
 function clamp(x,a,b){ return Math.max(a,Math.min(b,x)); }
 function norm(x,s){ return clamp(2*Math.tanh(x/s),-2,2); }
 
+/* RSI дивергенция (цена vs RSI върху последните ~40 часови свещи) —
+   класически ранен предупредителен сигнал за обръщане на посоката */
+function rsiDivergence(closes,rsi){
+  const n=closes.length,k=2,lb=Math.min(40,n-k);
+  const hi=[],lo=[];
+  for(let i=n-lb;i<n-k;i++){
+    if(i-k<0) continue;
+    let isH=true,isL=true;
+    for(let j=i-k;j<=i+k;j++){ if(j===i) continue;
+      if(closes[j]>=closes[i]) isH=false;
+      if(closes[j]<=closes[i]) isL=false; }
+    if(isH) hi.push(i); if(isL) lo.push(i);
+  }
+  let bear=false,bull=false;
+  if(hi.length>=2){ const a=hi[hi.length-2],b=hi[hi.length-1];
+    if(closes[b]>closes[a]&&rsi[a]!=null&&rsi[b]!=null&&rsi[b]<rsi[a]-1) bear=true; }
+  if(lo.length>=2){ const a=lo[lo.length-2],b=lo[lo.length-1];
+    if(closes[b]<closes[a]&&rsi[a]!=null&&rsi[b]!=null&&rsi[b]>rsi[a]+1) bull=true; }
+  return {bear,bull};
+}
+
 function computeSignal(c){
   const closes = (c.sparkline_in_7d && c.sparkline_in_7d.price) ? c.sparkline_in_7d.price.filter(x=>x!=null&&!isNaN(x)) : [];
   const have = closes.length>=55;          // достатъчно за EMA50/MACD
@@ -359,10 +429,11 @@ function computeSignal(c){
 
   // --- индикатори ---
   let ema9=null,ema21=null,ema50=null,rsiNow=null,rsiPrev=null,mac=null,bb=null,atr=null;
-  if(closes.length>=9) ema9=emaLast(closes,9);
-  if(closes.length>=21) ema21=emaLast(closes,21);
+  let e9s=[],e21s=[],rsArr=null;
+  if(closes.length>=9){ e9s=emaSeries(closes,9); ema9=e9s[e9s.length-1]; }
+  if(closes.length>=21){ e21s=emaSeries(closes,21); ema21=e21s[e21s.length-1]; }
   if(closes.length>=50) ema50=emaLast(closes,50);
-  if(closes.length>=15){ const rs=rsiSeries(closes,14); rsiNow=rs[rs.length-1]; rsiPrev=rs[rs.length-2]; }
+  if(closes.length>=15){ rsArr=rsiSeries(closes,14); rsiNow=rsArr[rsArr.length-1]; rsiPrev=rsArr[rsArr.length-2]; }
   if(closes.length>=35) mac=macdCalc(closes);
   if(closes.length>=20) bb=bollinger(closes,20,2);
   atr = atrFromCloses(closes,14);
@@ -379,7 +450,16 @@ function computeSignal(c){
   } else if(ema9!=null&&ema21!=null){
     trend = ema9>ema21?1:-1; trendTxt = ema9>ema21?"Възходящ (9>21)":"Низходящ (9<21)";
   }
-  out.components.push({k:"Тренд (EMA 9/21/50)",read:trendTxt,score:trend,w:0.22});
+  // прясно пресичане EMA9/21 в последните 3 свещи — интрадей тайминг сигнал
+  if(e9s.length&&e21s.length){
+    for(let i=closes.length-3;i<closes.length;i++){
+      if(i<1||e9s[i]==null||e21s[i]==null||e9s[i-1]==null||e21s[i-1]==null) continue;
+      const prevD=e9s[i-1]-e21s[i-1], curD=e9s[i]-e21s[i];
+      if(prevD<=0&&curD>0){ trend=clamp(trend+0.5,-2,2); trendTxt+=" · ново бичо пресичане"; out.flags.push({t:"Ново пресичане ▲ 9/21",c:"g"}); break; }
+      if(prevD>=0&&curD<0){ trend=clamp(trend-0.5,-2,2); trendTxt+=" · ново мечо пресичане"; out.flags.push({t:"Ново пресичане ▼ 9/21",c:"r"}); break; }
+    }
+  }
+  out.components.push({k:"Тренд (EMA 9/21/50)",read:trendTxt,score:trend,w:0.25});
 
   // 2) MACD w0.18
   let macdS=0, macdTxt="н/д";
@@ -392,7 +472,7 @@ function computeSignal(c){
     else if(!above&&mac.hist<0&&!rising){macdS=-2;macdTxt="Мечо, хистограма пада";}
     else {macdS=-1;macdTxt="Под сигналната линия";}
   }
-  out.components.push({k:"MACD (12,26,9)",read:macdTxt,score:macdS,w:0.18});
+  out.components.push({k:"MACD (12,26,9)",read:macdTxt,score:macdS,w:0.20});
 
   // 3) RSI w0.15
   let rsiS=0, rsiTxt="н/д";
@@ -405,6 +485,12 @@ function computeSignal(c){
     else if(rsiNow>=30){rsiS=rising?1:-1;rsiTxt="Мечи наклон ("+rsiNow.toFixed(0)+")";}
     else if(rsiNow>=20){rsiS=rising?1:-0.5;rsiTxt="Свръхпродаден ("+rsiNow.toFixed(0)+") — възможен отскок";out.flags.push({t:"Свръхпродаден",c:"w"});}
     else {rsiS=rising?1.5:-1;rsiTxt="Силно свръхпродаден ("+rsiNow.toFixed(0)+")";out.flags.push({t:"Свръхпродаден",c:"g"});}
+  }
+  // RSI дивергенция — ранен сигнал за изчерпване на движението
+  if(rsArr&&closes.length>=44){
+    const dv=rsiDivergence(closes,rsArr);
+    if(dv.bear){ rsiS=clamp(rsiS-0.7,-2,2); rsiTxt+=" · меча дивергенция"; out.flags.push({t:"Меча дивергенция",c:"r"}); }
+    else if(dv.bull){ rsiS=clamp(rsiS+0.7,-2,2); rsiTxt+=" · бича дивергенция"; out.flags.push({t:"Бича дивергенция",c:"g"}); }
   }
   out.components.push({k:"RSI (14)",read:rsiTxt,score:rsiS,w:0.15});
 
@@ -429,10 +515,10 @@ function computeSignal(c){
   if(ch1!=null||ch24!=null){
     const m1 = ch1!=null?norm(ch1,1.5):0;
     const m24 = ch24!=null?norm(ch24,6):0;
-    mom = clamp(0.65*m1+0.35*m24,-2,2);
+    mom = clamp(0.55*m1+0.45*m24,-2,2);
     momTxt = "1ч "+pct(ch1)+" · 24ч "+pct(ch24);
   }
-  out.components.push({k:"Моментум (1ч/24ч)",read:momTxt,score:mom,w:0.30});
+  out.components.push({k:"Моментум (1ч/24ч)",read:momTxt,score:mom,w:0.25});
 
   // 6) Обем-потвърждение w0.05
   let volS=0, volTxt="н/д";
@@ -451,6 +537,12 @@ function computeSignal(c){
   let score = clamp((total/wsum)*50, -100, 100);
   if(out.limited){ // при липса на данни — основно моментум
     score = clamp(((ch1!=null?norm(ch1,1.5):0)*0.6+(ch24!=null?norm(ch24,6):0)*0.4)*50,-100,100);
+  }
+  // защита от „гонене“ на преразтегнато интрадей движение:
+  // рязък 1ч скок + екстремен RSI → най-лошото време за вход по посоката
+  if(ch1!=null&&Math.abs(ch1)>4&&rsiNow!=null&&(rsiNow>=78||rsiNow<=22)){
+    score*=0.8;
+    out.flags.push({t:"Преразтегнато 1ч движение",c:"w"});
   }
 
   // --- увереност: съгласие между компонентите ---
@@ -771,7 +863,9 @@ function setupCanvas(cv){
 }
 function niceRange(min,max){ const pad=(max-min)*0.08||max*0.02||1; return [min-pad,max+pad]; }
 
+let lastCandles=null,lastLineMode=false;
 function drawCharts(candles, lineMode){
+  lastCandles=candles; lastLineMode=!!lineMode;
   const closes=candles.map(c=>c.c);
   drawPrice(candles, lineMode);
   drawRSI(closes);
@@ -890,7 +984,18 @@ $("#autoref").addEventListener("change",e=>{
   if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
   if(e.target.checked) autoTimer=setInterval(loadAll,120000);
 });
-window.addEventListener("resize",()=>{ if(detailState.id && $("#overlay").classList.contains("on")){ const c=RAW.find(x=>x.id===detailState.id); if(c&&c.sig.closes){ /* прерисуване при наличие */ } } });
+/* динамична височина на хедъра — лентата с колоните залепва точно под него */
+const hdrEl=document.querySelector("header");
+function setHdrH(){ document.documentElement.style.setProperty("--hdr-h", hdrEl.offsetHeight+"px"); }
+if(window.ResizeObserver) new ResizeObserver(setHdrH).observe(hdrEl);
+window.addEventListener("load",setHdrH); setHdrH();
+
+/* прерисуване на графиките в детайла при преоразмеряване */
+let rszT=null;
+window.addEventListener("resize",()=>{
+  clearTimeout(rszT);
+  rszT=setTimeout(()=>{ if($("#overlay").classList.contains("on")&&lastCandles) drawCharts(lastCandles,lastLineMode); },200);
+});
 
 /* старт */
 loadAll();
