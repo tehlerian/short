@@ -117,7 +117,10 @@ td.l{text-align:left}
 @media(max-width:880px){.mgrid{grid-template-columns:1fr}}
 .chart-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
 .chart-card h4{margin:2px 0 8px;font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;justify-content:space-between}
-canvas.chart{width:100%;display:block}
+canvas.chart{width:100%;display:block;height:auto}
+/* Фиксирани CSS височини — оформлението не зависи от backing-буфера (анти feedback-loop, критично за мобилни) */
+#priceChart{height:300px}#rsiChart{height:110px}#macdChart{height:120px}
+@media(max-width:880px){#priceChart{height:240px}#rsiChart{height:90px}#macdChart{height:100px}}
 .tf-seg{display:flex;gap:4px}
 .tf-seg button{padding:4px 9px;font-size:11px}
 .sig-summary{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
@@ -855,9 +858,16 @@ async function loadOHLC(c,days){
    ============================================================ */
 function setupCanvas(cv){
   const dpr=window.devicePixelRatio||1;
-  const w=cv.clientWidth||cv.parentElement.clientWidth-24;
-  const h=parseInt(cv.getAttribute("height"));
-  cv.width=w*dpr; cv.height=h*dpr;
+  // Запомни ОРИГИНАЛНАТА логическа височина веднъж. Не я чети от cv.height/атрибута,
+  // защото задаването на cv.height презаписва атрибута и при повторно рисуване
+  // височината се умножава по dpr всеки път (300→900→2700→…) → бяла страница на мобилни.
+  if(!cv.dataset.h) cv.dataset.h = String(parseInt(cv.getAttribute("height")) || 150);
+  const h = parseInt(cv.dataset.h);
+  const w = Math.max(1, cv.clientWidth || (cv.parentElement.clientWidth-24));
+  // Фиксирай показваната височина → оформлението не зависи от backing-буфера (без feedback-loop)
+  cv.style.height = h + "px";
+  cv.width = Math.round(w*dpr);
+  cv.height = Math.round(h*dpr);
   const ctx=cv.getContext("2d"); ctx.setTransform(dpr,0,0,dpr,0,0);
   return {ctx,w,h};
 }
@@ -978,7 +988,7 @@ document.querySelectorAll("thead th[data-s]").forEach(th=>th.onclick=()=>{
   const k=th.dataset.s; if(SORT.key===k) SORT.dir*=-1; else {SORT.key=k; SORT.dir=(k==="rank"||k==="name")?1:-1;} render();
 });
 $("#refresh").onclick=loadAll;
-$("#savekey").onclick=()=>{ APIKEY=$("#apikey").value.trim(); localStorage.setItem("cg_key",APIKEY); showError(APIKEY?"":""); loadAll(); };
+$("#savekey").onclick=()=>{ APIKEY=$("#apikey").value.trim(); localStorage.setItem("cg_key",APIKEY); showError(""); loadAll(); };
 $("#apikey").value=APIKEY;
 $("#autoref").addEventListener("change",e=>{
   if(autoTimer){ clearInterval(autoTimer); autoTimer=null; }
